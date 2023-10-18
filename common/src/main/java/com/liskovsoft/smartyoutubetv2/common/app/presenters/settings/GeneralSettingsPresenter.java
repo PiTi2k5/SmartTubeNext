@@ -17,10 +17,12 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.ExoMediaSourceFactory;
 import com.liskovsoft.smartyoutubetv2.common.misc.BackupAndRestoreManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
+import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.common.proxy.ProxyManager;
 import com.liskovsoft.smartyoutubetv2.common.proxy.WebProxyDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
@@ -94,7 +96,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
 
             options.add(UiOptionItem.from(getContext().getString(sectionResId), optionItem -> {
                 BrowsePresenter.instance(getContext()).enableSection(sectionId, optionItem.isSelected());
-            }, mGeneralData.isSectionEnabled(sectionId)));
+            }, mGeneralData.isSectionPinned(sectionId)));
         }
 
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.side_panel_sections), options);
@@ -245,6 +247,10 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         options.add(UiOptionItem.from("Play/Pause -> OK",
                 option -> mGeneralData.remapPlayPauseToOK(option.isSelected()),
                 mGeneralData.isRemapPlayPauseToOKEnabled()));
+
+        options.add(UiOptionItem.from("Numbers 3/1 -> Speed Up/Down",
+                option -> mGeneralData.remapNumbersToSpeed(option.isSelected()),
+                mGeneralData.isRemapNumbersToSpeedEnabled()));
 
         options.add(UiOptionItem.from("Next/Previous -> Speed Up/Down",
                 option -> mGeneralData.remapNextPrevToSpeed(option.isSelected()),
@@ -423,6 +429,13 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
+        options.add(UiOptionItem.from(getContext().getString(R.string.multi_profiles),
+                option -> {
+                    AppPrefs.instance(getContext()).enableMultiProfiles(option.isSelected());
+                    BrowsePresenter.instance(getContext()).updateSections();
+                },
+                AppPrefs.instance(getContext()).isMultiProfilesEnabled()));
+
         options.add(UiOptionItem.from(getContext().getString(R.string.child_mode),
                 getContext().getString(R.string.child_mode_desc),
                 option -> {
@@ -557,7 +570,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
 
         int topButtons = MainUIData.TOP_BUTTON_BROWSE_ACCOUNTS;
         int playerButtons = PlayerTweaksData.PLAYER_BUTTON_PLAY_PAUSE | PlayerTweaksData.PLAYER_BUTTON_NEXT | PlayerTweaksData.PLAYER_BUTTON_PREVIOUS |
-                    PlayerTweaksData.PLAYER_BUTTON_DISLIKE | PlayerTweaksData.PLAYER_BUTTON_LIKE | PlayerTweaksData.PLAYER_BUTTON_SCREEN_OFF |
+                    PlayerTweaksData.PLAYER_BUTTON_DISLIKE | PlayerTweaksData.PLAYER_BUTTON_LIKE | PlayerTweaksData.PLAYER_BUTTON_SCREEN_OFF_TIMEOUT |
                     PlayerTweaksData.PLAYER_BUTTON_SEEK_INTERVAL | PlayerTweaksData.PLAYER_BUTTON_PLAYBACK_QUEUE | PlayerTweaksData.PLAYER_BUTTON_OPEN_CHANNEL |
                     PlayerTweaksData.PLAYER_BUTTON_PIP | PlayerTweaksData.PLAYER_BUTTON_VIDEO_SPEED | PlayerTweaksData.PLAYER_BUTTON_SUBTITLES |
                     PlayerTweaksData.PLAYER_BUTTON_VIDEO_ZOOM | PlayerTweaksData.PLAYER_BUTTON_ADD_TO_PLAYLIST;
@@ -565,12 +578,14 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
                     MainUIData.MENU_ITEM_STREAM_REMINDER | MainUIData.MENU_ITEM_SAVE_PLAYLIST;
 
         PlayerTweaksData tweaksData = PlayerTweaksData.instance(getContext());
+        SearchData searchData = SearchData.instance(getContext());
 
         // Remove all
         mMainUIData.disableTopButton(Integer.MAX_VALUE);
         tweaksData.disablePlayerButton(Integer.MAX_VALUE);
         mMainUIData.disableMenuItem(Integer.MAX_VALUE);
         BrowsePresenter.instance(getContext()).enableAllSections(false);
+        searchData.disablePopularSearches(true);
 
         if (enable) {
             // apply child tweaks
@@ -590,6 +605,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
             BrowsePresenter.instance(getContext()).enableAllSections(true);
             tweaksData.disableSuggestions(false);
             mPlayerData.setRepeatMode(PlayerUI.REPEAT_MODE_ALL);
+            searchData.disablePopularSearches(false);
         }
     }
 
@@ -666,6 +682,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         menuNames.put(MainUIData.MENU_ITEM_PIN_TO_SIDEBAR, R.string.pin_unpin_from_sidebar);
         menuNames.put(MainUIData.MENU_ITEM_SHARE_LINK, R.string.share_link);
         menuNames.put(MainUIData.MENU_ITEM_SHARE_EMBED_LINK, R.string.share_embed_link);
+        menuNames.put(MainUIData.MENU_ITEM_SHARE_QR_LINK, R.string.share_qr_link);
         menuNames.put(MainUIData.MENU_ITEM_SELECT_ACCOUNT, R.string.dialog_account_list);
         menuNames.put(MainUIData.MENU_ITEM_MOVE_SECTION_UP, R.string.move_section_up);
         menuNames.put(MainUIData.MENU_ITEM_MOVE_SECTION_DOWN, R.string.move_section_down);

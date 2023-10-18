@@ -48,6 +48,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         appendVideoPresetsCategory(settingsPresenter);
         appendVideoBufferCategory(settingsPresenter);
         appendVideoZoomCategory(settingsPresenter);
+        appendVideoSpeedCategory(settingsPresenter);
         appendAudioLanguageCategory(settingsPresenter);
         appendAudioShiftCategory(settingsPresenter);
         appendMasterVolumeCategory(settingsPresenter);
@@ -57,7 +58,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         appendSeekTypeCategory(settingsPresenter);
         appendSeekingPreviewCategory(settingsPresenter);
         AppDialogUtil.appendSeekIntervalDialogItems(getContext(), settingsPresenter, mPlayerData, false);
-        appendRememberSpeedCategory(settingsPresenter);
+        //appendRememberSpeedCategory(settingsPresenter);
         appendScreenOffTimeoutCategory(settingsPresenter);
         appendEndingTimeCategory(settingsPresenter);
         appendPixelRatioCategory(settingsPresenter);
@@ -115,27 +116,27 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
 
     private void appendVideoBufferCategory(AppDialogPresenter settingsPresenter) {
         OptionCategory category = AppDialogUtil.createVideoBufferCategory(getContext(), mPlayerData);
-        settingsPresenter.appendRadioCategory(category.title, category.options);
+        settingsPresenter.appendCategory(category);
     }
 
     private void appendVideoPresetsCategory(AppDialogPresenter settingsPresenter) {
         OptionCategory category = AppDialogUtil.createVideoPresetsCategory(getContext());
-        settingsPresenter.appendRadioCategory(category.title, category.options);
+        settingsPresenter.appendCategory(category);
     }
 
     private void appendVideoZoomCategory(AppDialogPresenter settingsPresenter) {
         OptionCategory category = AppDialogUtil.createVideoZoomCategory(getContext(), mPlayerData);
-        settingsPresenter.appendRadioCategory(category.title, category.options);
+        settingsPresenter.appendCategory(category);
     }
 
     private void appendAudioLanguageCategory(AppDialogPresenter settingsPresenter) {
         OptionCategory category = AppDialogUtil.createAudioLanguageCategory(getContext(), mPlayerData);
-        settingsPresenter.appendRadioCategory(category.title, category.options);
+        settingsPresenter.appendCategory(category);
     }
 
     private void appendAudioShiftCategory(AppDialogPresenter settingsPresenter) {
         OptionCategory category = AppDialogUtil.createAudioShiftCategory(getContext(), mPlayerData);
-        settingsPresenter.appendRadioCategory(category.title, category.options);
+        settingsPresenter.appendCategory(category);
     }
 
     private void appendMasterVolumeCategory(AppDialogPresenter settingsPresenter) {
@@ -174,24 +175,19 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendRememberSpeedCategory(AppDialogPresenter settingsPresenter) {
-        List<OptionItem> options = new ArrayList<>();
+        OptionCategory category = AppDialogUtil.createRememberSpeedCategory(getContext(), mPlayerData);
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_remember_speed_none),
-                optionItem -> {
-                    mPlayerData.enableRememberSpeed(false);
-                    mPlayerData.enableRememberSpeedEach(false);
-                },
-                !mPlayerData.isRememberSpeedEnabled() && !mPlayerData.isRememberSpeedEachEnabled()));
+        settingsPresenter.appendRadioCategory(category.title, category.options);
+    }
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_remember_speed_all),
-                optionItem -> mPlayerData.enableRememberSpeed(true),
-                mPlayerData.isRememberSpeedEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_remember_speed_each),
-                optionItem -> mPlayerData.enableRememberSpeedEach(true),
-                mPlayerData.isRememberSpeedEachEnabled()));
-
-        settingsPresenter.appendRadioCategory(getContext().getString(R.string.player_remember_speed), options);
+    private void appendVideoSpeedCategory(AppDialogPresenter settingsPresenter) {
+        settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.video_speed), optionItem -> {
+            AppDialogPresenter settingsPresenter2 = AppDialogPresenter.instance(getContext());
+            settingsPresenter2.appendCategory(AppDialogUtil.createSpeedListCategory(getContext(), null, mPlayerData));
+            settingsPresenter2.appendCategory(AppDialogUtil.createRememberSpeedCategory(getContext(), mPlayerData));
+            settingsPresenter2.appendCategory(AppDialogUtil.createSpeedMiscCategory(getContext(), mPlayerTweaksData));
+            settingsPresenter2.showDialog(getContext().getString(R.string.video_speed));
+        }));
     }
 
     private void appendScreenOffTimeoutCategory(AppDialogPresenter settingsPresenter) {
@@ -212,7 +208,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 {R.string.action_video_info, PlayerTweaksData.PLAYER_BUTTON_VIDEO_INFO},
                 {R.string.action_video_stats, PlayerTweaksData.PLAYER_BUTTON_VIDEO_STATS},
                 {R.string.action_playback_queue, PlayerTweaksData.PLAYER_BUTTON_PLAYBACK_QUEUE},
-                {R.string.action_screen_off, PlayerTweaksData.PLAYER_BUTTON_SCREEN_OFF},
+                //{R.string.action_screen_off, PlayerTweaksData.PLAYER_BUTTON_SCREEN_OFF},
                 {R.string.player_screen_off_timeout, PlayerTweaksData.PLAYER_BUTTON_SCREEN_OFF_TIMEOUT},
                 {R.string.action_video_zoom, PlayerTweaksData.PLAYER_BUTTON_VIDEO_ZOOM},
                 {R.string.action_channel, PlayerTweaksData.PLAYER_BUTTON_OPEN_CHANNEL},
@@ -375,16 +371,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                     mRestartApp = true;
                 },
                 !mGeneralData.isSettingsSectionEnabled()));
-
-        //options.add(UiOptionItem.from(getContext().getString(R.string.alt_app_icon),
-        //        option -> {
-        //            mGeneralData.enableAltAppIcon(option.isSelected());
-        //            Helpers.enableActivity(getContext(), option.isSelected() ?
-        //                    "com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity" : "com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivityAlt", false);
-        //            Helpers.enableActivity(getContext(), option.isSelected() ?
-        //                    "com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivityAlt" : "com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity", true);
-        //        },
-        //        mGeneralData.isAltAppIconEnabled()));
 
         // Disabled inside RetrofitHelper
         //options.add(UiOptionItem.from("Prefer IPv4 DNS",
@@ -562,9 +548,9 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 option -> mPlayerTweaksData.enableSectionPlaylist(option.isSelected()),
                 mPlayerTweaksData.isSectionPlaylistEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_long_speed_list),
-                option -> mPlayerTweaksData.enableLongSpeedList(option.isSelected()),
-                mPlayerTweaksData.isLongSpeedListEnabled()));
+        //options.add(UiOptionItem.from(getContext().getString(R.string.player_long_speed_list),
+        //        option -> mPlayerTweaksData.enableLongSpeedList(option.isSelected()),
+        //        mPlayerTweaksData.isLongSpeedListEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_button_long_click),
                 option -> mPlayerTweaksData.enableButtonLongClick(option.isSelected()),
@@ -626,18 +612,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         options.add(UiOptionItem.from(getContext().getString(R.string.player_speed_button_old_behavior),
                 option -> mPlayerTweaksData.enableSpeedButtonOldBehavior(option.isSelected()),
                 mPlayerTweaksData.isSpeedButtonOldBehaviorEnabled()));
-
-        //OptionItem remainingTime = UiOptionItem.from(getContext().getString(R.string.player_show_remaining_time),
-        //        option -> mPlayerData.enableRemainingTime(option.isSelected()), mPlayerData.isRemainingTimeEnabled());
-        //
-        //OptionItem endingTime = UiOptionItem.from(getContext().getString(R.string.player_show_ending_time),
-        //        option -> mPlayerData.enableEndingTime(option.isSelected()), mPlayerData.isEndingTimeEnabled());
-        //
-        //remainingTime.setRadio(endingTime);
-        //endingTime.setRadio(remainingTime);
-        //
-        //options.add(remainingTime);
-        //options.add(endingTime);
 
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.player_other), options);
     }

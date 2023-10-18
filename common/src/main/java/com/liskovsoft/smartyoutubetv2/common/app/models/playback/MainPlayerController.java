@@ -13,7 +13,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.Aut
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.CommentsController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.ContentBlockController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.HQDialogController;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.LiveChatController;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.ChatController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.PlayerUIController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.RemoteController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsController;
@@ -51,7 +51,7 @@ public class MainPlayerController implements PlayerEventListener {
         PlayerUIController uiManager = new PlayerUIController(videoLoader);
         VideoStateController stateUpdater = new VideoStateController();
         ContentBlockController contentBlockManager = new ContentBlockController();
-        LiveChatController liveChatManager = new LiveChatController();
+        ChatController liveChatManager = new ChatController();
         CommentsController commentsManager = new CommentsController();
 
         RemoteController commandManager = new RemoteController(context, suggestionsLoader, videoLoader);
@@ -241,6 +241,11 @@ public class MainPlayerController implements PlayerEventListener {
     }
 
     @Override
+    public void onSpeedChanged(float speed) {
+        process(listener -> listener.onSpeedChanged(speed));
+    }
+
+    @Override
     public void onPlayEnd() {
         process(PlayerEventListener::onPlayEnd);
     }
@@ -355,13 +360,13 @@ public class MainPlayerController implements PlayerEventListener {
     }
 
     @Override
-    public void onVideoSpeedClicked(boolean enabled) {
-        process(listener -> listener.onVideoSpeedClicked(enabled));
+    public void onSpeedClicked(boolean enabled) {
+        process(listener -> listener.onSpeedClicked(enabled));
     }
 
     @Override
-    public void onVideoSpeedLongClicked(boolean enabled) {
-        process(listener -> listener.onVideoSpeedLongClicked(enabled));
+    public void onSpeedLongClicked(boolean enabled) {
+        process(listener -> listener.onSpeedLongClicked(enabled));
     }
 
     @Override

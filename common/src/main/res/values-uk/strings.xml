@@ -95,7 +95,7 @@
     <string name="disable_update_check">Не перевіряти оновлення</string>
     <string name="show_again">Нагадувати постійно</string>
     <string name="check_updates_auto">Повідомляти про оновлення</string>
-    <string name="select_account_on_boot">Обирати на старті</string>
+    <string name="select_account_on_boot">Показувати діалог вибору облікового запису на старті застосунку</string>
     <string name="player_other">Різне</string>
     <string name="player_full_date">Точна дата в описі</string>
     <string name="open_channel">Перейти до каналу</string>
@@ -157,6 +157,7 @@
     <string name="card_title_lines_num">Кількість рядків у картках</string>
     <string name="card_auto_scrolled_title">Прокручувати обрізаний заголовок</string>
     <string name="share_link">Поділитися посиланням</string>
+    <string name="share_qr_link">Поділитися посиланням (QR код)</string>
     <string name="subscribe_to_channel">Підписатися на канал</string>
     <string name="wait_data_loading">Зачекайте поки дані завантажуються…</string>
     <string name="auto_frame_rate_pause">Auto Frame Rate (пауза при перемиканні)</string>
@@ -587,4 +588,11 @@
     <string name="unlock_high_bitrate_formats">Розблокувати 1080p vp9 формати з високим бітрейтом</string>
     <string name="unlock_high_bitrate_audio_formats">Розблокувати mp4a формати з високим бітрейтом</string>
     <string name="color_scheme_blue">Блакитна</string>
+    <string name="color_scheme_dark_blue">Темно-блакитна</string>
+    <string name="player_speed_per_channel">Для кожного каналу</string>
+    <string name="disable_popular_searches">Не показувати популяні пошукові запити</string>
+    <string name="multi_profiles">Використовувати окремі налаштування для кожного облікового запису</string>
+    <string name="protect_account_with_password">Захистити цей обліковий запис паролем</string>
+    <string name="enter_account_password">Введіть пароль від облікового запису</string>
+    <string name="show_connect_messages">Сповіщення про підключені пристрої</string>
 </resources>

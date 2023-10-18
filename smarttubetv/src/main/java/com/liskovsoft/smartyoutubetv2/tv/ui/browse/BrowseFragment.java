@@ -47,7 +47,6 @@ import java.util.Map;
 public class BrowseFragment extends BrowseSupportFragment implements BrowseView {
     private static final String TAG = BrowseFragment.class.getSimpleName();
     private static final String SELECTED_HEADER_INDEX = "SelectedHeaderIndex";
-    private static final String SELECTED_ITEM_INDEX = "SelectedItemIndex";
     private ArrayObjectAdapter mSectionRowAdapter;
     private BrowsePresenter mBrowsePresenter;
     private Map<Integer, BrowseSection> mSections;
@@ -57,7 +56,6 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     private NavigateTitleView mTitleView;
     private boolean mIsFragmentCreated;
     private int mRestoredHeaderIndex = -1;
-    private int mRestoredItemIndex = -1;
     private boolean mFocusOnContent;
 
     @Override
@@ -65,7 +63,6 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         super.onCreate(null);
 
         mRestoredHeaderIndex = savedInstanceState != null ? savedInstanceState.getInt(SELECTED_HEADER_INDEX, -1) : -1;
-        mRestoredItemIndex = savedInstanceState != null ? savedInstanceState.getInt(SELECTED_ITEM_INDEX, -1) : -1;
         mIsFragmentCreated = true;
 
         mSections = new HashMap<>();
@@ -87,8 +84,6 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
 
         // Store position in case activity is crashed
         outState.putInt(SELECTED_HEADER_INDEX, getSelectedPosition());
-        // Not robust. Because tab content often changed after reloading.
-        outState.putInt(SELECTED_ITEM_INDEX, mSectionFragmentFactory.getCurrentFragmentItemIndex());
     }
 
     @Override
@@ -116,8 +111,7 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         mRestoredHeaderIndex = -1;
 
         // Restore state after crash
-        selectSectionItem(mRestoredItemIndex);
-        mRestoredItemIndex = -1;
+        selectSectionItem(mBrowsePresenter.getCurrentVideo());
     }
 
     @Override
@@ -253,13 +247,11 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     @Override
     public void showError(ErrorFragmentData data) {
         replaceMainFragment(new ErrorDialogFragment(data));
-        updateTitleView();
     }
 
     private void showErrorIfEmpty(ErrorFragmentData data) {
         if (isEmpty()) {
             replaceMainFragment(new ErrorDialogFragment(data));
-            updateTitleView();
         }
     }
 
@@ -305,16 +297,18 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     }
 
     @Override
+    public void removeAllSections() {
+        mSections.clear();
+        mSectionRowAdapter.clear();
+    }
+
+    @Override
     public void updateSection(VideoGroup group) {
         restoreMainFragment();
 
         mSectionFragmentFactory.updateCurrentFragment(group);
 
         fixInvisibleSearchOrb();
-
-        if (group.getAction() == VideoGroup.ACTION_REPLACE) { // minimize call frequency
-            updateTitleView();
-        }
     }
 
     @Override
@@ -322,14 +316,13 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         restoreMainFragment();
 
         mSectionFragmentFactory.updateCurrentFragment(group);
-
-        updateTitleView();
     }
 
     @Override
     public void selectSection(int index, boolean focusOnContent) {
-        if (index >= 0 && index < mSectionRowAdapter.size()) {
-            setSelectedPosition(index);
+        if (index >= 0 && mSectionRowAdapter.size() > 0) {
+            // Fallback to the last section if index above size
+            setSelectedPosition(index < mSectionRowAdapter.size() ? index : mSectionRowAdapter.size() - 1);
             mFocusOnContent = focusOnContent; // focus after header transition
         }
     }
@@ -425,7 +418,7 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     }
 
     @Override
-    public void clearSection(BrowseSection category) {
+    public void clearSection(BrowseSection section) {
         mSectionFragmentFactory.clearCurrentFragment();
     }
 
@@ -488,11 +481,5 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     @Override
     public boolean isEmpty() {
         return mSectionFragmentFactory == null || mSectionFragmentFactory.isEmpty();
-    }
-
-    private void updateTitleView() {
-        if (mTitleView != null) {
-            mTitleView.update();
-        }
     }
 }

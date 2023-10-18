@@ -3,12 +3,14 @@ package com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsController.MetadataListener;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService.State;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -166,6 +168,9 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
 
         // Channel info should be loaded at this point
         restoreSubtitleFormat();
+
+        // Need to contain channel id
+        restoreSpeed();
     }
 
     @Override
@@ -191,7 +196,7 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
         // In this state video length is not undefined.
         restorePosition();
         restorePendingPosition();
-        restoreSpeed();
+        //restoreSpeed();
         // Player thinks that subs not enabled if I enable it too early (e.g. on source change event).
         //restoreSubtitleFormat();
 
@@ -250,23 +255,6 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
     }
 
     @Override
-    public void onSeekEnd() {
-        // Scenario: user opens ui and does some seeking
-        // NOTE: dangerous: there's possibility of simultaneous seeks (e.g. when sponsor block is enabled)
-        //saveState();
-    }
-
-    @Override
-    public void onControlsShown(boolean shown) {
-        // NOTE: bug: current position saving to wrong video id. Explanation below.
-        // Bug in casting: current video doesn't match currently loaded one into engine.
-        //if (shown) {
-        //    // Scenario: user clicked on channel button
-        //    saveState();
-        //}
-    }
-
-    @Override
     public void onSourceChanged(Video item) {
         // At this stage video isn't loaded yet. So format switch isn't take any resources.
         restoreFormats();
@@ -278,34 +266,42 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
     }
 
     @Override
-    public void onVideoSpeedClicked(boolean enabled) {
+    public void onSpeedChanged(float speed) {
+        mPlayerData.setSpeed(getVideo().channelId, speed);
+    }
+
+    @Override
+    public void onSpeedClicked(boolean enabled) {
         if (Helpers.floatEquals(mPlayerData.getLastSpeed(), 1.0f) || mPlayerTweaksData.isSpeedButtonOldBehaviorEnabled()) {
-            onVideoSpeedLongClicked(enabled);
+            onSpeedLongClicked(enabled);
         } else {
             State state = mStateService.getByVideoId(getVideo() != null ? getVideo().videoId : null);
             float lastSpeed = mPlayerData.getLastSpeed();
-            if (state != null && mPlayerData.isRememberSpeedEachEnabled()) {
+            if (state != null && mPlayerData.isSpeedPerVideoEnabled()) {
                 lastSpeed = !Helpers.floatEquals(1.0f, state.speed) ? state.speed : lastSpeed;
                 mPlayerData.setLastSpeed(lastSpeed);
                 mStateService.save(new State(state.videoId, state.positionMs, state.durationMs, enabled ? 1.0f : lastSpeed));
             }
-            mPlayerData.setSpeed(enabled ? 1.0f : lastSpeed);
+            mPlayerData.setSpeed(getVideo().channelId, enabled ? 1.0f : lastSpeed);
             getPlayer().setSpeed(enabled ? 1.0f : lastSpeed);
         }
     }
 
     @Override
-    public void onVideoSpeedLongClicked(boolean enabled) {
+    public void onSpeedLongClicked(boolean enabled) {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
         // suppose live stream if buffering near the end
         // boolean isStream = Math.abs(player.getDuration() - player.getCurrentPosition()) < 10_000;
-        AppDialogUtil.appendSpeedDialogItems(getContext(), settingsPresenter, getPlayer(), mPlayerData);
+        settingsPresenter.appendCategory(AppDialogUtil.createSpeedListCategory(getContext(), getPlayer(), mPlayerData));
 
-        settingsPresenter.showDialog(() -> {
+        //settingsPresenter.appendCategory(AppDialogUtil.createRememberSpeedCategory(getContext(), mPlayerData));
+        //settingsPresenter.appendCategory(AppDialogUtil.createSpeedMiscCategory(getContext(), mPlayerTweaksData));
+
+        settingsPresenter.showDialog(getContext().getString(R.string.video_speed), () -> {
             State state = mStateService.getByVideoId(getVideo() != null ? getVideo().videoId : null);
-            if (state != null && mPlayerData.isRememberSpeedEachEnabled()) {
-                mStateService.save(new State(state.videoId, state.positionMs, state.durationMs, mPlayerData.getSpeed()));
+            if (state != null && mPlayerData.isSpeedPerVideoEnabled()) {
+                mStateService.save(new State(state.videoId, state.positionMs, state.durationMs, mPlayerData.getSpeed(getVideo().channelId)));
             }
         });
     }
@@ -342,7 +338,7 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
     }
 
     private void resetGlobalSpeedIfNeeded() {
-        if (mPlayerData != null && !mPlayerData.isRememberSpeedEnabled()) {
+        if (mPlayerData != null && !mPlayerData.isAllSpeedEnabled()) {
             mPlayerData.setSpeed(1.0f);
         }
     }
@@ -356,7 +352,7 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
         State state = mStateService.getByVideoId(videoId);
 
         if (state != null) {
-            if (mPlayerData.isRememberSpeedEachEnabled()) {
+            if (mPlayerData.isSpeedPerVideoEnabled()) {
                 mStateService.save(new State(videoId, 0, state.durationMs, state.speed));
             } else {
                 mStateService.removeByVideoId(videoId);
@@ -400,8 +396,8 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
     private void restoreSubtitleFormat() {
         FormatItem result = mPlayerData.getFormat(FormatItem.TYPE_SUBTITLE);
 
-        if (mPlayerData.isSubtitlesForChannelEnabled()) {
-            result = mPlayerData.isSubtitlesForChannelEnabled(getPlayer().getVideo().channelId) ? mPlayerData.getLastSubtitleFormat() : FormatItem.SUBTITLE_NONE;
+        if (mPlayerData.isSubtitlesPerChannelEnabled()) {
+            result = mPlayerData.isSubtitlesPerChannelEnabled(getPlayer().getVideo().channelId) ? mPlayerData.getLastSubtitleFormat() : FormatItem.SUBTITLE_NONE;
         }
 
         getPlayer().setFormat(result);
@@ -481,7 +477,7 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
     private void updateHistory() {
         Video video = getVideo();
 
-        if (video == null || video.isShorts || mIncognito || !getPlayer().containsMedia()) {
+        if (video == null || (video.isShorts && mGeneralData.isHideShortsFromHistoryEnabled()) || mIncognito || !getPlayer().containsMedia()) {
             return;
         }
 
@@ -509,7 +505,11 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
             getPlayer().setSpeed(1.0f);
         } else {
             State state = mStateService.getByVideoId(item.videoId);
-            getPlayer().setSpeed(state != null && mPlayerData.isRememberSpeedEachEnabled() ? state.speed : mPlayerData.getSpeed());
+            float speed = mPlayerData.getSpeed(item.channelId);
+            getPlayer().setSpeed(
+                    state != null && mPlayerData.isSpeedPerVideoEnabled() ? state.speed :
+                            mPlayerData.isAllSpeedEnabled() || item.channelId != null ? speed : 1.0f
+            );
         }
     }
 

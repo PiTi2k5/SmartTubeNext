@@ -95,7 +95,7 @@
     <string name="disable_update_check">Disable update check</string>
     <string name="show_again">Show again</string>
     <string name="check_updates_auto">Notify about the update</string>
-    <string name="select_account_on_boot">Select on boot</string>
+    <string name="select_account_on_boot">Show account selection on boot</string>
     <string name="player_other">Misc</string>
     <string name="player_full_date">Precise date in description</string>
     <string name="open_channel">Open channel</string>
@@ -157,6 +157,7 @@
     <string name="card_title_lines_num">Card title lines num</string>
     <string name="card_auto_scrolled_title">Auto-scroll cropped title</string>
     <string name="share_link">Share link</string>
+    <string name="share_qr_link">Share link (QR code)</string>
     <string name="subscribe_to_channel">Subscribe to channel</string>
     <string name="wait_data_loading">Please wait while data is loading…</string>
     <string name="auto_frame_rate_pause">Auto Frame Rate (pause when switching)</string>
@@ -596,4 +597,11 @@
     <string name="unlock_high_bitrate_formats">Unlock high bitrate 1080p vp9 formats</string>
     <string name="unlock_high_bitrate_audio_formats">Unlock high bitrate mp4a formats</string>
     <string name="color_scheme_blue">Blue</string>
+    <string name="color_scheme_dark_blue">Dark Blue</string>
+    <string name="player_speed_per_channel">Per each channel</string>
+    <string name="disable_popular_searches">Disable popular search queries</string>
+    <string name="multi_profiles">Use separate settings per each account</string>
+    <string name="protect_account_with_password">Protect this account with password</string>
+    <string name="enter_account_password">Enter account password</string>
+    <string name="show_connect_messages">Show connect messages</string>
 </resources>

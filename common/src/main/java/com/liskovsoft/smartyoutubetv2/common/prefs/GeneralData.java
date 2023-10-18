@@ -9,6 +9,7 @@ import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 import com.liskovsoft.smartyoutubetv2.common.utils.HashList;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class GeneralData {
+public class GeneralData implements ProfileChangeListener {
     public static final int SCREENSAVER_TIMEOUT_NEVER = 0;
     private static final String GENERAL_DATA = "general_data";
     public static final int EXIT_NONE = 0;
@@ -62,6 +63,7 @@ public class GeneralData {
     private boolean mIsRemapChannelUpToSpeedEnabled;
     private boolean mIsRemapFastForwardToSpeedEnabled;
     private boolean mIsRemapNextPrevToSpeedEnabled;
+    private boolean mIsRemapNumbersToSpeedEnabled;
     private boolean mIsRemapPlayPauseToOKEnabled;
     private boolean mIsRemapChannelUpToSearchEnabled;
     private boolean mIsHideShortsFromHomeEnabled;
@@ -108,6 +110,7 @@ public class GeneralData {
     private GeneralData(Context context) {
         mContext = context;
         mPrefs = AppPrefs.instance(context);
+        mPrefs.addListener(this);
         initSections();
         restoreState();
     }
@@ -196,7 +199,7 @@ public class GeneralData {
     /**
      * Contains sections and pinned items!
      */
-    public boolean isSectionEnabled(int sectionId) {
+    public boolean isSectionPinned(int sectionId) {
         Video section = Helpers.findFirst(mPinnedItems, item -> getSectionId(item) == sectionId);
         return section != null; // by default enable all pinned items
     }
@@ -415,6 +418,15 @@ public class GeneralData {
 
     public boolean isRemapNextPrevToSpeedEnabled() {
         return mIsRemapNextPrevToSpeedEnabled;
+    }
+
+    public void remapNumbersToSpeed(boolean enable) {
+        mIsRemapNumbersToSpeedEnabled = enable;
+        persistState();
+    }
+
+    public boolean isRemapNumbersToSpeedEnabled() {
+        return mIsRemapNumbersToSpeedEnabled;
     }
 
     public void remapPlayPauseToOK(boolean enable) {
@@ -774,7 +786,7 @@ public class GeneralData {
     }
 
     private void restoreState() {
-        String data = mPrefs.getData(GENERAL_DATA);
+        String data = mPrefs.getProfileData(GENERAL_DATA);
 
         String[] split = Helpers.splitObjectLegacy(data);
 
@@ -829,6 +841,7 @@ public class GeneralData {
         mHistoryState = Helpers.parseInt(split, 47, HISTORY_ENABLED);
         mRememberSubscriptionsPosition = Helpers.parseBoolean(split, 48, false);
         mSelectedSubscriptionsItem = Video.fromString(Helpers.parseStr(split, 49));
+        mIsRemapNumbersToSpeedEnabled = Helpers.parseBoolean(split, 50, false);
 
         if (pinnedItems != null && !pinnedItems.isEmpty()) {
             String[] pinnedItemsArr = Helpers.splitArray(pinnedItems);
@@ -858,7 +871,7 @@ public class GeneralData {
         }
 
         // Backward compatibility
-        if (!isSectionEnabled(MediaGroup.TYPE_SETTINGS)) {
+        if (!isSectionPinned(MediaGroup.TYPE_SETTINGS)) {
             initPinnedItems();
         }
 
@@ -880,7 +893,7 @@ public class GeneralData {
         }
         String playlistOrder = Helpers.mergeArray(playlistOrderPairs.toArray());
         // Zero index is skipped. Selected sections were there.
-        mPrefs.setData(GENERAL_DATA, Helpers.mergeObject(null, mBootSectionId, mIsSettingsSectionEnabled, mAppExitShortcut,
+        mPrefs.setProfileData(GENERAL_DATA, Helpers.mergeObject(null, mBootSectionId, mIsSettingsSectionEnabled, mAppExitShortcut,
                 mIsReturnToLauncherEnabled,mBackgroundShortcut, pinnedItems, mIsHideShortsFromSubscriptionsEnabled,
                 mIsRemapFastForwardToNextEnabled, null,
                 mIsProxyEnabled, mIsBridgeCheckEnabled, mIsOkButtonLongPressDisabled, mLastPlaylistId,
@@ -891,7 +904,8 @@ public class GeneralData {
                 playlistOrder, pendingStreams, mIsGlobalClockEnabled, mTimeFormat, mSettingsPassword, mIsChildModeEnabled, mIsHistoryEnabled,
                 mScreensaverTimeoutMs, null, mIsAltAppIconEnabled, mVersionCode, mIsSelectChannelSectionEnabled, mMasterPassword,
                 mIsOldHomeLookEnabled, mIsOldUpdateNotificationsEnabled, mScreensaverDimmingPercents, mIsRemapNextPrevToSpeedEnabled,
-                mIsRemapPlayPauseToOKEnabled, mHistoryState, mRememberSubscriptionsPosition, Helpers.toString(mSelectedSubscriptionsItem)));
+                mIsRemapPlayPauseToOKEnabled, mHistoryState, mRememberSubscriptionsPosition, Helpers.toString(mSelectedSubscriptionsItem),
+                mIsRemapNumbersToSpeedEnabled));
     }
 
     private int getSectionId(Video item) {
@@ -900,5 +914,15 @@ public class GeneralData {
         }
 
         return item.extra == -1 ? item.hashCode() : item.extra;
+    }
+
+    @Override
+    public void onProfileChanged() {
+        // reset on profile change
+        mPinnedItems.clear();
+        mPendingStreams.clear();
+        mPlaylistOrder.clear();
+
+        restoreState();
     }
 }

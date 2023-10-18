@@ -77,7 +77,7 @@
     <string name="player_only_ui">Sadece arayüz</string>
     <string name="player_ui_and_pause">Arayüz ve duraklat</string>
     <string name="player_only_pause">Sadece duraklat</string>
-    <string name="check_for_updates">Güncellemeleri kontrol et</string>
+    <string name="check_for_updates">Güncellemeyi kontrol et</string>
     <string name="update_not_found">En son sürümü kullanıyorsunuz</string>
     <string name="update_in_progress">Bekleyin…</string>
     <string name="player_ui_hide_behavior">Kullanıcı arayüzünü otomatik gizle</string>
@@ -87,14 +87,14 @@
     <string name="large_ui">Büyük kullanıcı arayüzü</string>
     <string name="video_grid_scale">Video ızgara ölçeği</string>
     <string name="scale_ui">Kullanıcı arayüz ölçeği</string>
-    <string name="color_scheme">Temalar</string>
+    <string name="color_scheme">Renk düzeni</string>
     <string name="color_scheme_default">Varsayılan</string>
     <string name="color_scheme_red_grey">Kırmızı-Gri</string>
     <string name="color_scheme_red">Kırmızı</string>
-    <string name="color_scheme_dark_grey">Koyu gri</string>
+    <string name="color_scheme_dark_grey">Koyu Gri</string>
     <string name="disable_update_check">Güncelleme kontrolünü devre dışı bırak</string>
     <string name="show_again">Tekrar göster</string>
-    <string name="check_updates_auto">Otomatik güncelleme kontrolü</string>
+    <string name="check_updates_auto">Güncelleme hakkında bilgi ver</string>
     <string name="select_account_on_boot">Açılışta hesap seç</string>
     <string name="player_other">Çeşitli</string>
     <string name="player_full_date">Açıklamada tam tarih</string>
@@ -208,7 +208,10 @@
     <string name="player_remember_speed_all">Tüm videolarda aynı</string>
     <string name="player_remember_speed_each">Her video için</string>
     <string name="msg_player_error_source">Video indirilemiyor</string>
-    <string name="msg_player_error_renderer">Seçilen video biçimi desteklenmiyor.\nBelki bir aygıt yazılımı hatasıdır. Cihazı yeniden başlatıp deneyin.</string>
+    <string name="msg_player_error_renderer">Seçilen biçim desteklenmiyor.\nBaşka bir biçim seçmeyi deneyin.\nBu işe yaramazsa cihazı yeniden başlatmayı deneyin.</string>
+    <string name="msg_player_error_video_renderer">Seçilen VİDEO biçimi desteklenmiyor.\nOynatıcıdaki HQ düğmesine basarak başka bir tane seçmeyi deneyin.\nBu işe yaramazsa cihazı yeniden başlatmayı deneyin.</string>
+    <string name="msg_player_error_audio_renderer">Seçilen SES biçimi desteklenmiyor.\nOynatıcıdaki HQ düğmesine basarak başka bir tane seçmeyi deneyin.\nBu işe yaramazsa cihazı yeniden başlatmayı deneyin.</string>
+    <string name="msg_player_error_subtitle_renderer">Seçilen ALTYAZI biçimi desteklenmiyor.\nOynatıcıdaki CC düğmesine uzun basarak başka bir tane seçmeyi deneyin.\nBu işe yaramazsa cihazı yeniden başlatmayı deneyin.</string>
     <string name="msg_player_error_unexpected">Bilinmeyen video çözücü hatası</string>
     <string name="video_aspect">En boy oranı</string>
     <string name="player_tweaks">Geliştirici seçenekleri</string>
@@ -318,7 +321,10 @@
     <string name="content_block_filler">Konu dışı (boşluk doldurma)</string>
     <string name="keyboard_auto_show">Klavyeyi otomatik olarak göster</string>
     <string name="cancel_dialog">İptal et</string>
-    <string name="msg_player_error_source2">Video kaynağı çalışmıyor ya da cihaz saati yanlış.\nGenellikle bu uygulama sorunudur.</string>
+    <string name="msg_player_error_source2">URL çalışmıyor ya da yanlış cihaz saati.\nGenellikle bu, uygulama sorunudur.</string>
+    <string name="msg_player_error_video_source">VİDEO URL\'si çalışmıyor ya da yanlış cihaz saati.\nGenellikle bu, uygulama sorunudur.</string>
+    <string name="msg_player_error_audio_source">SES URL\'si çalışmıyor ya da yanlış cihaz saati.\nGenellikle bu, uygulama sorunudur.</string>
+    <string name="msg_player_error_subtitle_source">ALTYAZI URL\'si çalışmıyor ya da yanlış cihaz saati.\nGenellikle bu, uygulama sorunudur.</string>
     <string name="hide_upcoming">Abonelikler\'de yaklaşan yayınları gizle</string>
     <string name="search_background_playback">Arama yaparken/Kanalı açarken resim içinde resim moduna geç</string>
     <string name="trending_row_name">Trendler</string>
@@ -417,7 +423,7 @@
     <string name="sleep_timer">Uyku zamanlayıcısı (uzaktan kumanda bir saat kullanılmadıysa)</string>
     <string name="sleep_timer_desc">Kullanıcı bir saat boyunca uzaktan kumandayı kullanmadıysa oynatmayı duraklatır.</string>
     <string name="disable_vsync">Dikey eşzamanlamaya uymayı devre dışı bırak</string>
-    <string name="disable_vsync_desc">Oynatma performansını biraz artırır.</string>
+    <string name="disable_vsync_desc">Bu seçenek, karelerin ekranın dikey senkronizasyon sinyaliyle hizalanmasını devre dışı bırakır. Bu, işlemci kaynaklarını serbest bırakarak düşük kaliteli cihazlarda performansı artırabilir.</string>
     <string name="skip_codec_profile_check">Kod çözücü profil düzey kontrolünü atla</string>
     <string name="skip_codec_profile_check_desc">Bir videoyu başlatırken kod çözücü desteğini kontrol etmez. Sorunlu aygıt yazılımlarında yardımcı olabilir.</string>
     <string name="force_sw_codec">Yazılımsal video kod çözücüyü zorla</string>
@@ -460,6 +466,7 @@
     <string name="releases">Sürümler</string>
     <string name="prefer_avc_over_vp9">Kod çözücü seçimi: avc\'yi vp9\'a tercih et</string>
     <string name="open_chat">Sohbet/Yorumlar</string>
+    <string name="open_comments">Yorumları aç</string>
     <string name="place_chat_left">Sohbeti sola yerleştir</string>
     <string name="use_alt_speech_recognizer">Alternatif konuşma tanıyıcı</string>
     <string name="time_format">Saat modu</string>
@@ -496,6 +503,8 @@
     <string name="player_button_long_click">Hızlı işlem için düğmeye kısa tıkla, ayarlarına gitmek için uzun tıkla</string>
     <string name="pause_history">Geçmişi duraklat</string>
     <string name="resume_history">Geçmişi devam ettir</string>
+    <string name="disable_history">Geçmişi devre dışı bırak</string>
+    <string name="enable_history">Geçmişi etkinleştir</string>
     <string name="clear_history">Geçmişi temizle</string>
     <string name="chapters">Bölümler</string>
     <string name="card_multiline_subtitle">Çok satırlı altyazılar</string>
@@ -541,7 +550,7 @@
     <string name="enable_master_password">Ana şifreyi etkinleştir</string>
     <string name="enter_master_password">Ana şifreyi gir</string>
     <string name="disable_stream_buffer">Canlı yayınlarda ara belleği devre dışı bırak</string>
-    <string name="disable_stream_buffer_desc">Canlı yayının çok geride olduğu durumlar için düzeltme. Not: Cnlı yayın gecikmeye başlayabilir.</string>
+    <string name="disable_stream_buffer_desc">Canlı yayının çok geride olduğu durumlar için düzeltme. Not: Canlı yayın gecikmeye başlayabilir.</string>
     <string name="sony_frame_drop_fix">Kare bırakma düzeltmesi #1</string>
     <string name="sony_frame_drop_fix_desc">Sony TV ve diğer bazı cihazlardaki gecikmeleri düzeltir. Not: Ses senkronizasyonu ile ilgili olası sorunlar olabilir.
     </string>
@@ -557,6 +566,7 @@
     <string name="screensaver">Ekran koruyucu</string>
     <string name="player_screen_off_timeout">Ekran kapatma zaman aşımı</string>
     <string name="old_update_notifications">Güncelleme bildirimlerinin eski görünümü</string>
+    <string name="dialog_notification">Açılır iletişim kutusuyla güncelleme hakkında bilgi ver</string>
     <string name="mark_as_watched">İzlendi olarak işaretle</string>
     <string name="player_ui_animations">Kullanıcı arayüzü animasyonlarını etkinleştir</string>
     <string name="player_likes_count">Beğenme/Beğenmeme sayısını göster</string>
@@ -576,4 +586,20 @@
     <string name="player_ui_on_next">Bir sonraki videoya geçerken oynatıcı arayüzünü göster</string>
     <string name="autogenerated">otomatik oluşturuldu</string>
     <string name="player_auto_volume">Otomatik ses ayarı</string>
+    <string name="header_shorts">Shorts</string>
+    <string name="player_global_focus">Oynatıcı düğmesi satırları arasında kusursuz gezinme</string>
+    <string name="auto_history">Otomatik (hesap ayarlarını kullan)</string>
+    <string name="remember_position_subscriptions">Abonelikler\'de son görüntülenen konumu hatırla</string>
+    <string name="msg_player_unknown_error">Bilinmeyen hata</string>
+    <string name="header_notifications">Bildirimler</string>
+    <string name="disable_search_history">Arama geçmişini devre dışı bırak</string>
+    <string name="unlock_high_bitrate_formats">Yüksek bit hızına sahip 1080p vp9 biçimlerinin kilidini aç</string>
+    <string name="unlock_high_bitrate_audio_formats">Yüksek bit hızına sahip mp4a biçimlerinin kilidini aç</string>
+    <string name="color_scheme_blue">Mavi</string>
+    <string name="color_scheme_dark_blue">Koyu Mavi</string>
+    <string name="player_speed_per_channel">Her kanal için</string>
+    <string name="disable_popular_searches">Popüler arama sorgularını devre dışı bırak</string>
+    <string name="multi_profiles">Her hesap için ayrı ayarlar kullan</string>
+    <string name="protect_account_with_password">Bu hesabı şifre ile koru</string>
+    <string name="enter_account_password">Hesap şifresini girin</string>
 </resources>
