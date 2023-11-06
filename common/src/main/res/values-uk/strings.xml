@@ -248,7 +248,8 @@
     <string name="uploads_row_name">Завантаження</string>
     <string name="playlists_row_name">Створені списки відтворення</string>
     <string name="popular_uploads_row_name">Популярні завантаження</string>
-    <string name="breaking_news_row_name">Важливі новини</string>
+    <string name="news_row_name">Новини</string>
+    <string name="breaking_news_row_name">Термінові новини</string>
     <string name="covid_news_row_name">Новини про коронавірус COVID-19</string>
     <string name="enable_voice_search">Увімкнути глобальний пошук (потрібна підтримка прошивки)</string>
     <string name="subscribe_unsubscribe_from_channel">Підписатися/Відписатися від каналу</string>
@@ -595,4 +596,9 @@
     <string name="protect_account_with_password">Захистити цей обліковий запис паролем</string>
     <string name="enter_account_password">Введіть пароль від облікового запису</string>
     <string name="show_connect_messages">Сповіщення про підключені пристрої</string>
+    <string name="prefer_avc_over_vp9_desc">ПОПЕРЕДЖЕННЯ: 1080p максімум</string>
+    <string name="play_next">Відтворити наступним</string>
+    <string name="hide_watched_from_subscriptions">Приховати переглянуті відео з Підписок</string>
+    <string name="hide_unwanted_content">Приховати небажаний вміст</string>
+    <string name="hide_watched_from_home">Приховати переглянуті відео з Головного розділу</string>
 </resources>

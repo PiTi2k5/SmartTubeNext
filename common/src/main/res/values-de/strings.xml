@@ -95,7 +95,7 @@
     <string name="disable_update_check">Update-Prüfung deaktivieren</string>
     <string name="show_again">Erneut anzeigen</string>
     <string name="check_updates_auto">Über Update benachrichtigen</string>
-    <string name="select_account_on_boot">Konto beim Start auswählen</string>
+    <string name="select_account_on_boot">Kontoauswahl beim Start anzeigen</string>
     <string name="player_other">Sonstige</string>
     <string name="player_full_date">Genaues Datum in der Beschreibung</string>
     <string name="open_channel">Kanal öffnen</string>
@@ -157,6 +157,7 @@
     <string name="card_title_lines_num">Zeilenanzahl in Titeln</string>
     <string name="card_auto_scrolled_title">Auto-Scrollen in Titeln</string>
     <string name="share_link">Link teilen</string>
+    <string name="share_qr_link">Link teilen (QR-Code)</string>
     <string name="subscribe_to_channel">Kanal abonnieren</string>
     <string name="wait_data_loading">Bitte warten, während die Daten geladen werden…</string>
     <string name="auto_frame_rate_pause">Automatische Bildrate (Pause beim Umschalten)</string>
@@ -247,6 +248,7 @@
     <string name="uploads_row_name">Uploads</string>
     <string name="playlists_row_name">Erstellte Wiedergabelisten</string>
     <string name="popular_uploads_row_name">Beliebte Uploads</string>
+    <string name="news_row_name">Nachrichten</string>
     <string name="breaking_news_row_name">Eilmeldungen</string>
     <string name="covid_news_row_name">Nachrichten zu COVID-19</string>
     <string name="enable_voice_search">Globale Sprachsuche aktivieren (Firmware-Unterstützung erforderlich)</string>
@@ -602,4 +604,10 @@
     <string name="multi_profiles">Separate Einstellungen für jedes Konto verwenden</string>
     <string name="protect_account_with_password">Dieses Konto mit einem Passwort schützen</string>
     <string name="enter_account_password">Konto-Passwort eingeben</string>
+    <string name="show_connect_messages">Verbindungsnachrichten anzeigen</string>
+    <string name="prefer_avc_over_vp9_desc">ACHTUNG: Maximal 1080p</string>
+    <string name="play_next">Als Nächstes abspielen</string>
+    <string name="hide_watched_from_subscriptions">Gesehene Videos in Abos ausblenden</string>
+    <string name="hide_unwanted_content">Unerwünschte Inhalte ausblenden</string>
+    <string name="hide_watched_from_home">Gesehene Videos in Start ausblenden</string>
 </resources>

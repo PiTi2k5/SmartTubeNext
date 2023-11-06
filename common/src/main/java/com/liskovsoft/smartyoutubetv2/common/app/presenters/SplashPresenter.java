@@ -14,10 +14,12 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.StreamReminderService;
+import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
@@ -63,15 +65,20 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
     @Override
     public void onViewInitialized() {
+        if (getView() == null) {
+            return;
+        }
+
         applyRunPerInstanceTasks();
         applyRunOnceTasks();
 
         //runRefreshCachePeriodicTask();
-        showAccountSelection();
+        showAccountSelectionIfNeeded();
 
-        if (getView() != null) {
-            checkMasterPassword(() -> applyNewIntent(getView().getNewIntent()));
-        }
+        checkMasterPassword(() -> applyNewIntent(getView().getNewIntent()));
+
+        checkAccountPassword();
+        showBootDialogs();
     }
 
     private void applyRunPerInstanceTasks() {
@@ -95,8 +102,25 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         }
     }
 
-    private void showAccountSelection() {
+    private void showAccountSelectionIfNeeded() {
         AccountSelectionPresenter.instance(getContext()).show();
+    }
+
+    private void checkAccountPassword() {
+        AccountsData data = AccountsData.instance(getContext());
+        // Block even if the password was accepted before
+        if (data.getAccountPassword() != null) {
+            data.setPasswordAccepted(false);
+            PlaybackPresenter.instance(getContext()).forceFinish();
+            BrowsePresenter.instance(getContext()).updateSections();
+        }
+    }
+
+    private void showBootDialogs() {
+        BootDialogPresenter updatePresenter = BootDialogPresenter.instance(getContext());
+        updatePresenter.start();
+        //updatePresenter.unhold();
+        Utils.updateRemoteControlService(getContext());
     }
 
     private void runRemoteControlFakeTask() {
@@ -301,7 +325,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         // No passwd or the app already started
         if (password == null || ViewManager.instance(getContext()).getTopView() != null) {
             onSuccess.run();
-            getView().finishView();
+            getView().finishView(); // critical part, fix black screen on app exit
         } else {
             SimpleEditDialog.show(
                     getContext(),
@@ -315,7 +339,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                     },
                     getContext().getString(R.string.enter_master_password),
                     true,
-                    () -> getView().finishView()
+                    () -> getView().finishView() // critical part, fix black screen on app exit
             );
         }
     }

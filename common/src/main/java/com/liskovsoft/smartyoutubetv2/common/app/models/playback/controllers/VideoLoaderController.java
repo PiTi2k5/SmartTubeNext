@@ -36,7 +36,7 @@ import java.util.List;
 public class VideoLoaderController extends PlayerEventListenerHelper implements MetadataListener, OnDataChange {
     private static final String TAG = VideoLoaderController.class.getSimpleName();
     private final Playlist mPlaylist;
-    private final SuggestionsController mSuggestionsLoader;
+    private final SuggestionsController mSuggestionsController;
     private final UniqueRandom mRandom;
     private Video mLastVideo;
     private int mLastError = -1;
@@ -47,9 +47,9 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
     private Disposable mFormatInfoAction;
     private Disposable mMpdStreamAction;
     private final Runnable mReloadVideoHandler = () -> loadVideo(mLastVideo);
-    private final Runnable mPendingNext = () -> {
+    private final Runnable mPendingSync = () -> {
         if (getPlayer() != null) {
-            openVideoFromNext(getPlayer().getVideo(), false);
+            waitMetadataSync(getPlayer().getVideo(), false);
         }
     };
     private final Runnable mPendingRestartEngine = () -> {
@@ -60,8 +60,8 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
     };
     private final Runnable mLoadRandomNext = this::loadRandomNext;
 
-    public VideoLoaderController(SuggestionsController suggestionsLoader) {
-        mSuggestionsLoader = suggestionsLoader;
+    public VideoLoaderController(SuggestionsController suggestionsController) {
+        mSuggestionsController = suggestionsController;
         mPlaylist = Playlist.instance();
         mRandom = new UniqueRandom();
     }
@@ -151,23 +151,22 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
     public void loadPrevious() {
         Video previous = mPlaylist.getPrevious();
 
-        if (previous != null) {
+        if (mSuggestionsController.getPrevious() != null) {
+            openVideoInt(mSuggestionsController.getPrevious());
+        } else if (previous != null) {
             previous.fromQueue = true;
             openVideoInt(previous);
         }
     }
 
     public void loadNext() {
-        Video next = mPlaylist.getNext();
+        Video next = mSuggestionsController.getNext();
         mLastVideo = null; // in case next video is the same as previous
 
         if (next != null) {
-            next.fromQueue = true;
             openVideoInt(next);
-        } else if (mSuggestionsLoader.getNext() != null) {
-            openVideoInt(mSuggestionsLoader.getNext());
         } else {
-            openVideoFromNext(getPlayer().getVideo(), true);
+            waitMetadataSync(getPlayer().getVideo(), true);
         }
 
         if (mPlayerTweaksData.isPlayerUiOnNextEnabled()) {
@@ -245,16 +244,15 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
         if (item != null) {
             mPlaylist.setCurrent(item);
             getPlayer().setVideo(item);
-            mSuggestionsLoader.loadSuggestions(item);
+            mSuggestionsController.loadSuggestions(item);
         }
     }
 
-    private void openVideoFromNext(Video current, boolean showLoadingMsg) {
+    private void waitMetadataSync(Video current, boolean showLoadingMsg) {
         if (current == null) {
             return;
         }
 
-        // Significantly improves next video loading time!
         if (current.nextMediaItem != null) {
             openVideoInt(Video.from(current.nextMediaItem));
         } else if (!current.isSynced) { // Maybe there's nothing left. E.g. when casting from phone
@@ -265,7 +263,7 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
             // Short videos next fix (suggestions aren't loaded yet)
             boolean isEnded = getPlayer() != null && Math.abs(getPlayer().getDurationMs() - getPlayer().getPositionMs()) < 100;
             if (isEnded) {
-                Utils.postDelayed(mPendingNext, 1_000);
+                Utils.postDelayed(mPendingSync, 1_000);
             }
         }
     }
@@ -292,7 +290,7 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
         if (formatInfo.isUnplayable()) {
             getPlayer().setTitle(formatInfo.getPlayabilityStatus());
             getPlayer().showOverlay(true);
-            mSuggestionsLoader.loadSuggestions(mLastVideo);
+            mSuggestionsController.loadSuggestions(mLastVideo);
             bgImageUrl = mLastVideo.getBackgroundUrl();
             loadNext();
         } else if (formatInfo.containsDashVideoInfo() && acceptDashVideoInfo(formatInfo)) {
@@ -321,7 +319,7 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
         } else {
             Log.d(TAG, "Empty format info received. Seems future live translation. No video data to pass to the player.");
             scheduleReloadVideoTimer(30 * 1_000);
-            mSuggestionsLoader.loadSuggestions(mLastVideo);
+            mSuggestionsController.loadSuggestions(mLastVideo);
             bgImageUrl = mLastVideo.getBackgroundUrl();
         }
 
@@ -374,7 +372,7 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
     private void disposeActions() {
         MediaServiceManager.instance().disposeActions();
         RxHelper.disposeActions(mFormatInfoAction, mMpdStreamAction);
-        Utils.removeCallbacks(mReloadVideoHandler, mPendingRestartEngine, mPendingNext);
+        Utils.removeCallbacks(mReloadVideoHandler, mPendingRestartEngine, mPendingSync);
     }
 
     private void runErrorAction(int error, int rendererIndex, String message) {

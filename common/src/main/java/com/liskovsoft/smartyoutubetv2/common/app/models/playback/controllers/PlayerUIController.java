@@ -53,6 +53,7 @@ public class PlayerUIController extends PlayerEventListenerHelper implements Met
     private final Handler mHandler;
     private final MediaItemService mMediaItemManager;
     private final VideoLoaderController mVideoLoader;
+    private final SuggestionsController mSuggestionsController;
     private PlayerData mPlayerData;
     private PlayerTweaksData mPlayerTweaksData;
     private List<PlaylistInfo> mPlaylistInfos;
@@ -74,7 +75,8 @@ public class PlayerUIController extends PlayerEventListenerHelper implements Met
         }
     };
 
-    public PlayerUIController(VideoLoaderController videoLoader) {
+    public PlayerUIController(SuggestionsController suggestionsController, VideoLoaderController videoLoader) {
+        mSuggestionsController = suggestionsController;
         mVideoLoader = videoLoader;
         mHandler = new Handler(Looper.getMainLooper());
 
@@ -172,6 +174,7 @@ public class PlayerUIController extends PlayerEventListenerHelper implements Met
             List<FormatItem> subtitleFormats = getPlayer().getSubtitleFormats();
             List<FormatItem> subtitleOrigFormats = Helpers.filter(subtitleFormats,
                     value -> value.isDefault() || !SubtitleTrack.isAuto(value.getLanguage()));
+            reorderSubtitles(subtitleOrigFormats);
             settingsPresenter.appendRadioCategory(subtitlesOrigCategoryTitle,
                     UiOptionItem.from(subtitleOrigFormats,
                             option -> {
@@ -186,6 +189,7 @@ public class PlayerUIController extends PlayerEventListenerHelper implements Met
             List<FormatItem> subtitleFormats = getPlayer().getSubtitleFormats();
             List<FormatItem> subtitleAutoFormats = Helpers.filter(subtitleFormats,
                     value -> value.isDefault() || SubtitleTrack.isAuto(value.getLanguage()));
+            reorderSubtitles(subtitleAutoFormats);
             settingsPresenter.appendRadioCategory(subtitlesAutoCategoryTitle,
                     UiOptionItem.from(subtitleAutoFormats,
                             option -> {
@@ -331,13 +335,17 @@ public class PlayerUIController extends PlayerEventListenerHelper implements Met
                 group.setTitle(title);
                 group.setId(id);
                 getPlayer().removeSuggestions(group);
-            } else if (action == VideoMenuCallback.ACTION_ADD_TO_QUEUE) {
+            } else if (action == VideoMenuCallback.ACTION_ADD_TO_QUEUE || action == VideoMenuCallback.ACTION_PLAY_NEXT) {
                 Video newItem = videoItem.copy();
                 VideoGroup group = VideoGroup.from(newItem, 0);
                 group.setTitle(title);
                 group.setId(id);
                 newItem.setGroup(group);
+                if (action == VideoMenuCallback.ACTION_PLAY_NEXT) {
+                    group.setAction(VideoGroup.ACTION_PREPEND);
+                }
                 getPlayer().updateSuggestions(group);
+                getPlayer().setNextTitle(mSuggestionsController.getNext() != null ? mSuggestionsController.getNext().getTitle() : null);
             }
         });
     }
@@ -836,5 +844,23 @@ public class PlayerUIController extends PlayerEventListenerHelper implements Met
         }
 
         getPlayer().setButtonState(R.id.action_subscribe, buttonState == PlayerUI.BUTTON_OFF ? PlayerUI.BUTTON_ON: PlayerUI.BUTTON_OFF);
+    }
+
+    private void reorderSubtitles(List<FormatItem> subtitleFormats) {
+        if (subtitleFormats == null || subtitleFormats.isEmpty()) {
+            return;
+        }
+
+        // Move last format to the top
+        int index = 0;
+        int begin = subtitleFormats.get(0).isDefault() ? 1 : 0;
+        List<FormatItem> topSubtitles = new ArrayList<>();
+        while (index != -1) {
+            index = subtitleFormats.indexOf(mPlayerData.getLastSubtitleFormat());
+            if (index != -1) {
+                topSubtitles.add(subtitleFormats.remove(index));
+            }
+        }
+        subtitleFormats.addAll(subtitleFormats.size() < begin ? 0 : begin, topSubtitles);
     }
 }

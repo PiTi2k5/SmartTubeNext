@@ -248,7 +248,8 @@
     <string name="uploads_row_name">Все видео</string>
     <string name="playlists_row_name">Все плейлисты</string>
     <string name="popular_uploads_row_name">Популярные</string>
-    <string name="breaking_news_row_name">Важные новости</string>
+    <string name="news_row_name">Новости</string>
+    <string name="breaking_news_row_name">Срочные новости</string>
     <string name="covid_news_row_name">Новости о коронавирусе COVID-19</string>
     <string name="enable_voice_search">Включить глобальный поиск (требуется поддержка прошивки)</string>
     <string name="subscribe_unsubscribe_from_channel">Подписаться/Отписаться от канала</string>
@@ -595,4 +596,9 @@
     <string name="protect_account_with_password">Защитить этот аккаунт паролем</string>
     <string name="enter_account_password">Введите пароль от аккаунта</string>
     <string name="show_connect_messages">Сообщения о подключенных устройствах</string>
+    <string name="prefer_avc_over_vp9_desc">ПРЕДУПРЕЖДЕНИЕ: 1080p максимум</string>
+    <string name="play_next">Воспроизвезти следующим</string>
+    <string name="hide_watched_from_subscriptions">Скрывать просмотренные видео из Подписок</string>
+    <string name="hide_unwanted_content">Скрывать нежелательное содержимое</string>
+    <string name="hide_watched_from_home">Скрывать просмотренные видео из Домашнего раздела</string>
 </resources>

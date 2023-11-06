@@ -270,7 +270,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             }
         }
 
-        // Move current focus (also updates title view)
+        // Refresh and restore last focus
         int selectedSectionIndex = findSectionIndex(mCurrentSection != null ? mCurrentSection.getId() : -1);
         getView().selectSection(selectedSectionIndex != -1 ? selectedSectionIndex : mBootSectionIndex, false);
     }
@@ -449,31 +449,19 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     }
 
     public void moveSectionUp(BrowseSection section) {
+        mCurrentSection = section; // move current focus
         mGeneralData.moveSectionUp(section.getId());
         updateSections();
-
-        // Move current focus
-        if (getView() != null) {
-            getView().selectSection(findSectionIndex(section.getId()), false);
-        }
     }
 
     public void moveSectionDown(BrowseSection section) {
+        mCurrentSection = section; // move current focus
         mGeneralData.moveSectionDown(section.getId());
         updateSections();
-
-        // No need to move focus because section should be already focused.
-    }
-
-    public boolean canMoveSectionUp(BrowseSection section) {
-        return mGeneralData.canMoveSectionUp(section.getId());
-    }
-
-    public boolean canMoveSectionDown(BrowseSection section) {
-        return mGeneralData.canMoveSectionDown(section.getId());
     }
 
     public void renameSection(BrowseSection section) {
+        mCurrentSection = section; // move current focus
         mGeneralData.renameSection(section.getId(), section.getTitle());
         updateSections();
     }
@@ -494,31 +482,32 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     public void enableSection(int sectionId, boolean enable) {
         mGeneralData.enableSection(sectionId, enable);
 
-        if (enable) {
-            updateSections();
-        } else {
-            if (getView() != null) {
-                getView().removeSection(mSectionsMapping.get(sectionId));
-            }
-        }
+        updateSections();
     }
 
     public void pinItem(Video item) {
-        mGeneralData.addPinnedItem(item);
+        if (getView() == null) {
+            return;
+        }
 
-        updateSections();
+        mGeneralData.addPinnedItem(item);
+        mGridMapping.put(item.hashCode(), createPinnedAction(item));
+
+        BrowseSection newSection = new BrowseSection(item.hashCode(), item.title, BrowseSection.TYPE_GRID, item.cardImageUrl, false, item);
+        Helpers.removeIf(mSections, section -> section.getId() == newSection.getId());
+        mSections.add(newSection);
+        getView().addSection(-1, newSection);
     }
 
     public void pinItem(String title, int resId, ErrorFragmentData data) {
-        appendToErrors(title, resId, data);
+        if (getView() == null) {
+            return;
+        }
 
-        updateSections();
-    }
-
-    private void appendToErrors(String title, int resId, ErrorFragmentData data) {
-        int id = title.hashCode();
-        Helpers.removeIf(mErrorSections, section -> section.getId() == id);
-        mErrorSections.add(new BrowseSection(id, title, BrowseSection.TYPE_ERROR, resId, false, data));
+        BrowseSection newSection = new BrowseSection(title.hashCode(), title, BrowseSection.TYPE_ERROR, resId, false, data);
+        Helpers.removeIf(mErrorSections, section -> section.getId() == newSection.getId());
+        mErrorSections.add(newSection);
+        getView().addSection(0, newSection);
     }
 
     private void appendToSections(String title, int resId, ErrorFragmentData data) {
@@ -908,19 +897,20 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
-        Helpers.removeIf(mediaGroups, value -> isFreeMoviesGroup(value) || isNewsGroup(value));
+        Helpers.removeIf(mediaGroups, value -> isPartialMatch(value) || isFullMatch(value));
     }
 
-    private boolean isFreeMoviesGroup(MediaGroup value) {
+    private boolean isPartialMatch(MediaGroup value) {
         return Helpers.containsAny(
                 value.getTitle(),
                 "Primetime" // Free movies and shows row
         );
     }
 
-    private boolean isNewsGroup(MediaGroup value) {
+    private boolean isFullMatch(MediaGroup value) {
         return Helpers.equalsAny(
                 value.getTitle(),
+                //getContext().getString(R.string.news_row_name),
                 getContext().getString(R.string.breaking_news_row_name),
                 getContext().getString(R.string.covid_news_row_name)
         );
@@ -1033,14 +1023,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
-        //mErrorSections.clear();
         mSections.clear();
         appendToSections(getContext().getString(R.string.header_notifications), R.drawable.icon_notification, new PasswordError(getContext()));
-
-        //// Fix empty fragment (previous fragment is still loading)
-        //Utils.postDelayed(() -> {
-        //    getView().showProgressBar(false);
-        //    getView().showError(new PasswordError(getContext()));
-        //}, 500);
     }
 }
