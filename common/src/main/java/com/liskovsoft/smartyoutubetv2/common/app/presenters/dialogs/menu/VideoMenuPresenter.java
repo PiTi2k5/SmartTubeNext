@@ -602,8 +602,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
     private void appendPlayVideoIncognitoButton() {
         if (!mIsPlayVideoIncognitoButtonEnabled || mVideo == null || mVideo.videoId == null ||
-            ViewManager.instance(getContext()).getTopView() == PlaybackView.class ||
-            BrowsePresenter.instance(getContext()).isHistorySection()) {
+            ViewManager.instance(getContext()).getTopView() == PlaybackView.class) {
             return;
         }
 
@@ -740,7 +739,9 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             return;
         }
 
-        if (mVideo == null || !BrowsePresenter.instance(getContext()).isPlaylistsSection()) {
+        BrowsePresenter presenter = BrowsePresenter.instance(getContext());
+
+        if (mVideo == null || !(presenter.isPlaylistsSection() && presenter.inForeground())) {
             return;
         }
 

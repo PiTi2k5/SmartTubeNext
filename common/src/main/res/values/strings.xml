@@ -572,8 +572,8 @@
     <string name="mark_as_watched">Mark as watched</string>
     <string name="player_ui_animations">Enable control panel animations</string>
     <string name="player_likes_count">Show likes/dislikes count</string>
-    <string name="sorting_alphabetically2">Alphabetically (fast)</string>
-    <string name="sorting_default">Default (fast)</string>
+    <string name="sorting_alphabetically2">Alphabetically (fast, animated previews)</string>
+    <string name="sorting_default">Default (fast, animated previews)</string>
     <string name="content_block_exclude_channel">Exclude this channel from SponsorBlock</string>
     <string name="content_block_stop_excluding_channel">Stop excluding this channel from SponsorBlock</string>
     <string name="player_chapter_notification">Show notification to quickly advance through the chapters</string>
@@ -610,4 +610,8 @@
     <string name="hide_watched_from_subscriptions">Hide watched videos from Subscriptions</string>
     <string name="hide_unwanted_content">Hide unwanted content</string>
     <string name="hide_watched_from_home">Hide watched videos from Home</string>
+    <string name="remote_control_permission">Background Remote control requires Overlay permission</string>
+    <string name="login_from_browser">Login from browser</string>
+    <string name="disable_remote_history">Disable history when using remote control</string>
+    <string name="keyboard_fix">Fix show keyboard by the OK key press (G20s and others)</string>
 </resources>

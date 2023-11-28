@@ -248,7 +248,8 @@
     <string name="uploads_row_name">Caricamenti</string>
     <string name="playlists_row_name">Playlist create</string>
     <string name="popular_uploads_row_name">Caricamenti popolari</string>
-    <string name="breaking_news_row_name">Notizie</string>
+    <string name="news_row_name">Notizie</string>
+    <string name="breaking_news_row_name">Ultime notizie</string>
     <string name="covid_news_row_name">Notizie su COVID-19</string>
     <string name="enable_voice_search">Abilita ricerca vocale (supporto firmware necessario)</string>
     <string name="subscribe_unsubscribe_from_channel">Iscriviti/Disiscriviti dal canale</string>
@@ -264,7 +265,7 @@
     <string name="option_disabled">Disabilitato</string>
     <string name="live_now_row_name">In onda</string>
     <string name="run_in_background">Riproduzione in background</string>
-    <string name="settings_remote_control">Telecomando</string>
+    <string name="settings_remote_control">Controllo remoto</string>
     <string name="background_service_started">Servizio di background avviato</string>
     <string name="dialog_add_to">Aggiungi a %s</string>
     <string name="dialog_remove_from">Rimuovi da %s</string>
@@ -557,7 +558,7 @@
     </string>
     <string name="audio_language">Lingua audio</string>
     <string name="old_home_look">Il vecchio aspetto della sezione Home</string>
-    <string name="hide_shorts_everywhere">Nascondi video brevi ovunque</string>
+    <string name="hide_shorts_everywhere">Nascondi i video brevi ovunque</string>
     <string name="update_found">Aggiornamento</string>
     <string name="volume_boost_warning">Qualsiasi impostazione oltre il limite può potenzialmente danneggiare gli altoparlanti</string>
     <string name="play_video_incognito">Riproduci in incognito</string>
@@ -571,8 +572,8 @@
     <string name="mark_as_watched">Segna come già visto</string>
     <string name="player_ui_animations">Abilita le animazioni del pannello di controllo</string>
     <string name="player_likes_count">Mostra il conteggio dei Mi piace/Non mi piace</string>
-    <string name="sorting_alphabetically2">In ordine alfabetico (veloce)</string>
-    <string name="sorting_default">Predefinito (veloce)</string>
+    <string name="sorting_alphabetically2">In ordine alfabetico (anteprime veloci e animate)</string>
+    <string name="sorting_default">Predefinito (anteprime veloci e animate)</string>
     <string name="content_block_exclude_channel">Escludi questo canale da SponsorBlock</string>
     <string name="content_block_stop_excluding_channel">Non escludere più questo canale da SponsorBlock</string>
     <string name="player_chapter_notification">Mostra notifica per avanzare rapidamente tra i capitoli</string>
@@ -605,4 +606,9 @@
     <string name="enter_account_password">Inserisci la password dell\'account</string>
     <string name="show_connect_messages">Mostra messaggi di connessione</string>
     <string name="prefer_avc_over_vp9_desc">ATTENZIONE: massimo 1080p</string>
+    <string name="play_next">Riproduci successivo</string>
+    <string name="hide_watched_from_subscriptions">Nascondi i video già visti dalle Iscrizioni</string>
+    <string name="hide_unwanted_content">Nascondi i contenuti indesiderati</string>
+    <string name="hide_watched_from_home">Nascondi i video già visti dalla Home</string>
+    <string name="remote_control_permission">Il controllo remoto in background richiede l\'autorizzazione alla sovrapposizione</string>
 </resources>

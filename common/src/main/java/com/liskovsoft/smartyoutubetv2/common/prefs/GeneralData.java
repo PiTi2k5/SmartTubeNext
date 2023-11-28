@@ -10,7 +10,7 @@ import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
-import com.liskovsoft.smartyoutubetv2.common.utils.HashList;
+import com.liskovsoft.smartyoutubetv2.common.utils.CopyOnWriteHashList;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GeneralData implements ProfileChangeListener {
     public static final int SCREENSAVER_TIMEOUT_NEVER = 0;
@@ -85,27 +86,8 @@ public class GeneralData implements ProfileChangeListener {
     private Video mSelectedSubscriptionsItem;
     private final Map<Integer, Integer> mDefaultSections = new LinkedHashMap<>();
     private final Map<String, Integer> mPlaylistOrder = new HashMap<>();
-    private final List<Video> mPendingStreams = new ArrayList<>();
-
-    private final List<Video> mPinnedItems = new HashList<Video>() {
-        @Override
-        public boolean add(Video video) {
-            if (video == null) {
-                return false;
-            }
-
-            return super.add(video);
-        }
-
-        @Override
-        public void add(int index, Video video) {
-            if (video == null) {
-                return;
-            }
-
-            super.add(index, video);
-        }
-    };
+    private final List<Video> mPendingStreams = new CopyOnWriteArrayList<>();
+    private final List<Video> mPinnedItems = new CopyOnWriteHashList<>();
 
     private GeneralData(Context context) {
         mContext = context;
@@ -339,6 +321,7 @@ public class GeneralData implements ProfileChangeListener {
 
     public void rememberSubscriptionsPosition(boolean remember) {
         mRememberSubscriptionsPosition = remember;
+        mSelectedSubscriptionsItem = null; // reset on change
         persistState();
     }
 
@@ -810,7 +793,7 @@ public class GeneralData implements ProfileChangeListener {
         mBootSectionId = Helpers.parseInt(split, 1, MediaGroup.TYPE_HOME);
         mIsSettingsSectionEnabled = Helpers.parseBoolean(split, 2, true);
         mAppExitShortcut = Helpers.parseInt(split, 3, EXIT_DOUBLE_BACK);
-        mIsReturnToLauncherEnabled = Helpers.parseBoolean(split, 4, true);
+        mIsReturnToLauncherEnabled = Helpers.parseBoolean(split, 4, false);
         mBackgroundShortcut = Helpers.parseInt(split, 5, BACKGROUND_PLAYBACK_SHORTCUT_HOME_BACK);
         String pinnedItems = Helpers.parseStr(split, 6);
         mIsHideShortsFromSubscriptionsEnabled = Helpers.parseBoolean(split, 7, false);

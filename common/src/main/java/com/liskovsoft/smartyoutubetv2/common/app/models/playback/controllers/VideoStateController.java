@@ -10,7 +10,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventList
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsController.MetadataListener;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService.State;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -19,6 +18,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.ScreensaverManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
@@ -35,6 +35,7 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
     private PlayerData mPlayerData;
     private GeneralData mGeneralData;
     private PlayerTweaksData mPlayerTweaksData;
+    private RemoteControlData mRemoteControlData;
     private VideoStateService mStateService;
     private boolean mIsPlayBlocked;
     private int mTickleLeft;
@@ -52,6 +53,7 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
         mPlayerData = PlayerData.instance(getContext());
         mGeneralData = GeneralData.instance(getContext());
         mPlayerTweaksData = PlayerTweaksData.instance(getContext());
+        mRemoteControlData = RemoteControlData.instance(getContext());
         mStateService = VideoStateService.instance(getContext());
     }
 
@@ -86,9 +88,9 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
     @Override
     public boolean onPreviousClicked() {
         // Seek to the start on prev
-        if (getPlayer().getPositionMs() > BEGIN_THRESHOLD_MS) {
+        if (getPlayer().getPositionMs() > BEGIN_THRESHOLD_MS && !getVideo().isShorts) {
             saveState(); // in case the user wants to go to previous video
-            getPlayer().setPositionMs(0);
+            getPlayer().setPositionMs(100);
             return true;
         }
 
@@ -273,17 +275,19 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
 
     @Override
     public void onSpeedClicked(boolean enabled) {
-        if (Helpers.floatEquals(mPlayerData.getLastSpeed(), 1.0f) || mPlayerTweaksData.isSpeedButtonOldBehaviorEnabled()) {
+        float lastSpeed = mPlayerData.getSpeed(getVideo().channelId);
+        if (Helpers.floatEquals(lastSpeed, 1.0f)) {
+            lastSpeed = mPlayerData.getLastSpeed();
+        }
+        State state = mStateService.getByVideoId(getVideo() != null ? getVideo().videoId : null);
+        if (state != null && mPlayerData.isSpeedPerVideoEnabled()) {
+            lastSpeed = !Helpers.floatEquals(1.0f, state.speed) ? state.speed : lastSpeed;
+            mStateService.save(new State(state.videoId, state.positionMs, state.durationMs, enabled ? 1.0f : lastSpeed));
+        }
+
+        if (Helpers.floatEquals(lastSpeed, 1.0f) || mPlayerTweaksData.isSpeedButtonOldBehaviorEnabled()) {
             onSpeedLongClicked(enabled);
         } else {
-            State state = mStateService.getByVideoId(getVideo() != null ? getVideo().videoId : null);
-            float lastSpeed = mPlayerData.getLastSpeed();
-            if (state != null && mPlayerData.isSpeedPerVideoEnabled()) {
-                lastSpeed = !Helpers.floatEquals(1.0f, state.speed) ? state.speed : lastSpeed;
-                mPlayerData.setLastSpeed(lastSpeed);
-                mStateService.save(new State(state.videoId, state.positionMs, state.durationMs, enabled ? 1.0f : lastSpeed));
-            }
-            mPlayerData.setSpeed(getVideo().channelId, enabled ? 1.0f : lastSpeed);
             getPlayer().setSpeed(enabled ? 1.0f : lastSpeed);
         }
     }
@@ -478,7 +482,8 @@ public class VideoStateController extends PlayerEventListenerHelper implements M
     private void updateHistory() {
         Video video = getVideo();
 
-        if (video == null || (video.isShorts && mGeneralData.isHideShortsFromHistoryEnabled()) || mIncognito || !getPlayer().containsMedia()) {
+        if (video == null || (video.isShorts && mGeneralData.isHideShortsFromHistoryEnabled()) ||
+                mIncognito || !getPlayer().containsMedia() || (video.isRemote && mRemoteControlData.isRemoteHistoryDisabled())) {
             return;
         }
 
