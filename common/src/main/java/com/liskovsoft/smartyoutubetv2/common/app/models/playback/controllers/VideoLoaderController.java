@@ -1,9 +1,12 @@
 package com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers;
 
+import android.annotation.SuppressLint;
+
 import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.MediaService;
+import com.liskovsoft.mediaserviceinterfaces.HubService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
@@ -15,19 +18,20 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsController.MetadataListener;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.listener.PlayerEventListener;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngine;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.VideoActionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
-import com.liskovsoft.smartyoutubetv2.common.prefs.DataChangeBase.OnDataChange;
+import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase.OnDataChange;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.UniqueRandom;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
-import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+import com.liskovsoft.youtubeapi.service.YouTubeHubService;
 import io.reactivex.disposables.Disposable;
 
 import java.util.Collections;
@@ -47,14 +51,14 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
     private Disposable mFormatInfoAction;
     private Disposable mMpdStreamAction;
     private final Runnable mReloadVideoHandler = () -> loadVideo(mLastVideo);
-    private final Runnable mPendingSync = () -> {
+    private final Runnable mMetadataSync = () -> {
         if (getPlayer() != null) {
             waitMetadataSync(getPlayer().getVideo(), false);
         }
     };
-    private final Runnable mPendingRestartEngine = () -> {
+    private final Runnable mFixAndRestartEngine = () -> {
         if (getPlayer() != null) {
-            YouTubeMediaService.instance().invalidateCache();
+            YouTubeHubService.instance().invalidateCache();
             getPlayer().restartEngine(); // properly save position of the current track
         }
     };
@@ -111,12 +115,12 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
     }
 
     @Override
-    public void onEngineError(int error, int rendererIndex, String message) {
-        Log.e(TAG, "Player error occurred: %s. Trying to fix…", error);
+    public void onEngineError(int type, int rendererIndex, Throwable error) {
+        Log.e(TAG, "Player error occurred: %s. Trying to fix…", type);
 
-        mLastError = error;
+        mLastError = type;
 
-        runErrorAction(error, rendererIndex, message);
+        runErrorAction(type, rendererIndex, error);
     }
 
     @Override
@@ -181,7 +185,7 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
         Video video = getPlayer().getVideo();
         if (video != null && video.finishOnEnded) {
             repeatMode = PlayerUI.REPEAT_MODE_CLOSE;
-        } else if (video != null && video.isShorts) {
+        } else if (video != null && video.isShorts && mPlayerTweaksData.isLoopShortsEnabled()) {
             repeatMode = PlayerUI.REPEAT_MODE_ONE;
         }
 
@@ -209,7 +213,7 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
             getPlayer().setVideo(mLastVideo);
         }
 
-        Utils.removeCallbacks(mPendingRestartEngine);
+        Utils.removeCallbacks(mFixAndRestartEngine);
 
         return false;
     }
@@ -265,7 +269,7 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
             // Short videos next fix (suggestions aren't loaded yet)
             boolean isEnded = getPlayer() != null && Math.abs(getPlayer().getDurationMs() - getPlayer().getPositionMs()) < 100;
             if (isEnded) {
-                Utils.postDelayed(mPendingSync, 1_000);
+                Utils.postDelayed(mMetadataSync, 1_000);
             }
         }
     }
@@ -273,7 +277,7 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
     private void loadFormatInfo(Video video) {
         disposeActions();
 
-        MediaService service = YouTubeMediaService.instance();
+        HubService service = YouTubeHubService.instance();
         MediaItemService mediaItemManager = service.getMediaItemService();
         mFormatInfoAction = mediaItemManager.getFormatInfoObserve(video.videoId)
                 .subscribe(this::processFormatInfo,
@@ -374,11 +378,14 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
     private void disposeActions() {
         MediaServiceManager.instance().disposeActions();
         RxHelper.disposeActions(mFormatInfoAction, mMpdStreamAction);
-        Utils.removeCallbacks(mReloadVideoHandler, mPendingRestartEngine, mPendingSync);
+        Utils.removeCallbacks(mReloadVideoHandler, mFixAndRestartEngine, mMetadataSync);
     }
 
-    private void runErrorAction(int error, int rendererIndex, String message) {
-        switch (error) {
+    @SuppressLint("StringFormatMatches")
+    private void runErrorAction(int type, int rendererIndex, Throwable error) {
+        String message = error != null ? error.getMessage() : null;
+
+        switch (type) {
             // Some ciphered data could be outdated.
             // Might happen when the app wasn't used quite a long time.
             case PlayerEventListener.ERROR_TYPE_SOURCE:
@@ -393,12 +400,14 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
                 // NOP
                 break;
             default:
-                MessageHelpers.showLongMessage(getContext(), getContext().getString(R.string.msg_player_error, error) + "\n" + message);
+                MessageHelpers.showLongMessage(getContext(), getContext().getString(R.string.msg_player_error, type) + "\n" + message);
                 break;
         }
 
+        applyErrorAction(error);
+
         // Delay to fix frequent requests
-        Utils.postDelayed(mPendingRestartEngine, 3_000);
+        Utils.postDelayed(mFixAndRestartEngine, 3_000);
     }
 
     private void applyRendererErrorAction(int rendererIndex) {
@@ -415,6 +424,14 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
             case PlayerEventListener.RENDERER_INDEX_SUBTITLE:
                 mPlayerData.setFormat(FormatItem.SUBTITLE_NONE);
                 break;
+        }
+    }
+
+    private void applyErrorAction(Throwable error) {
+        if (error instanceof OutOfMemoryError) {
+            mPlayerData.setVideoBufferType(PlayerData.BUFFER_LOW);
+        } else if (Helpers.startsWithAny(error.getMessage(), "Unable to connect to ", "Invalid NAL length")) {
+            mPlayerTweaksData.setPlayerDataSource(PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT);
         }
     }
 
@@ -509,7 +526,8 @@ public class VideoLoaderController extends PlayerEventListenerHelper implements 
             return false;
         }
 
-        if (formatInfo.isLive() && mPlayerTweaksData.isDashUrlStreamsForced()) {
+        // Live dash url doesn't work with None buffer
+        if (formatInfo.isLive() && (mPlayerTweaksData.isDashUrlStreamsForced() || mPlayerData.getVideoBufferType() == PlayerData.BUFFER_NONE)) {
             return false;
         }
 

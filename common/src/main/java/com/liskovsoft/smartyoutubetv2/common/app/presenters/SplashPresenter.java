@@ -24,7 +24,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
-import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+import com.liskovsoft.youtubeapi.service.YouTubeHubService;
 import io.reactivex.disposables.Disposable;
 
 import java.util.ArrayList;
@@ -159,7 +159,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             return;
         }
 
-        mRefreshCachePeriodicAction = RxHelper.startInterval(YouTubeMediaService.instance()::refreshCacheIfNeeded, 30 * 60);
+        mRefreshCachePeriodicAction = RxHelper.startInterval(YouTubeHubService.instance()::refreshCacheIfNeeded, 30 * 60);
     }
 
     private void enableHistoryIfNeeded() {
@@ -178,6 +178,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     }
 
     public void updateChannels() {
+        // Can't use class directly! ATV module is disabled for some flavors.
         Class<?> clazz = null;
 
         try {
@@ -211,7 +212,11 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
             if (searchText != null || IntentExtractor.isStartVoiceCommand(intent)) {
                 SearchPresenter searchPresenter = SearchPresenter.instance(getContext());
-                searchPresenter.startSearch(searchText);
+                if (IntentExtractor.isInstantPlayCommand(intent)) {
+                    searchPresenter.startPlay(searchText);
+                } else {
+                    searchPresenter.startSearch(searchText);
+                }
                 return true;
             }
 
@@ -248,16 +253,11 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             String videoId = IntentExtractor.extractVideoId(intent);
 
             if (videoId != null) {
-                ViewManager viewManager = ViewManager.instance(getContext());
-
-                // Also, ensure that we're not opening tube link from description dialog
-                if (GeneralData.instance(getContext()).isReturnToLauncherEnabled() && !AppDialogPresenter.instance(getContext()).isDialogShown()) {
-                    viewManager.setSinglePlayerMode(true);
-                }
-
                 long timeMs = IntentExtractor.extractVideoTimeMs(intent);
                 PlaybackPresenter playbackPresenter = PlaybackPresenter.instance(getContext());
                 playbackPresenter.openVideo(videoId, IntentExtractor.hasFinishOnEndedFlag(intent), timeMs);
+
+                enablePlayerOnlyModeIfNeeded();
 
                 return true;
             }
@@ -306,7 +306,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         });
     }
 
-    private void applyNewIntent(Intent intent) {
+    public void applyNewIntent(Intent intent) {
         if (intent != null) {
             mBridgePackageName = intent.getStringExtra("bridge_package_name");
         }
@@ -341,5 +341,11 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                     () -> getView().finishView() // critical part, fix black screen on app exit
             );
         }
+    }
+
+    private void enablePlayerOnlyModeIfNeeded() {
+        ViewManager viewManager = ViewManager.instance(getContext());
+
+        viewManager.enablePlayerOnlyMode(GeneralData.instance(getContext()).isPlayerOnlyModeEnabled());
     }
 }

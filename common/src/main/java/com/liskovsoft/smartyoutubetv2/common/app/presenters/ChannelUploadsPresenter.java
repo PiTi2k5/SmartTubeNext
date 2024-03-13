@@ -2,9 +2,9 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import com.liskovsoft.mediaserviceinterfaces.MediaGroupService;
+import com.liskovsoft.mediaserviceinterfaces.ContentService;
 import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.MediaService;
+import com.liskovsoft.mediaserviceinterfaces.HubService;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
@@ -22,7 +22,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMe
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.interfaces.VideoGroupPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
-import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+import com.liskovsoft.smartyoutubetv2.common.misc.DeArrowProcessor;
+import com.liskovsoft.youtubeapi.service.YouTubeHubService;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 
@@ -32,8 +33,9 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
     private static final String TAG = ChannelUploadsPresenter.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
     private static ChannelUploadsPresenter sInstance;
-    private final MediaGroupService mGroupManager;
+    private final ContentService mContentService;
     private final MediaItemService mItemManager;
+    private final DeArrowProcessor mDeArrowProcessor;
     private Disposable mUpdateAction;
     private Disposable mScrollAction;
     private Video mVideoItem;
@@ -42,9 +44,10 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
     public ChannelUploadsPresenter(Context context) {
         super(context);
-        MediaService mediaService = YouTubeMediaService.instance();
-        mGroupManager = mediaService.getMediaGroupService();
-        mItemManager = mediaService.getMediaItemService();
+        HubService hubService = YouTubeHubService.instance();
+        mContentService = hubService.getContentService();
+        mItemManager = hubService.getMediaItemService();
+        mDeArrowProcessor = new DeArrowProcessor(getContext(), this::syncItem);
     }
 
     public static ChannelUploadsPresenter instance(Context context) {
@@ -153,7 +156,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         }
     }
 
-    public Observable<MediaGroup> obtainPlaylistObservable(Video item) {
+    public Observable<MediaGroup> obtainUploadsObservable(Video item) {
         if (item == null) {
             return null;
         }
@@ -165,15 +168,15 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         disposeActions();
 
         return item.hasNestedItems() || item.isChannel() ?
-               mGroupManager.getGroupObserve(item.mediaItem) :
+               mContentService.getGroupObserve(item.mediaItem) :
                item.hasReloadPageKey() ?
-               mGroupManager.getGroupObserve(item.getReloadPageKey()) :
+               mContentService.getGroupObserve(item.getReloadPageKey()) :
                mItemManager.getMetadataObserve(item.videoId, item.playlistId, 0, item.playlistParams)
                        .flatMap(mediaItemMetadata -> Observable.just(findPlaylistRow(mediaItemMetadata)));
     }
 
     private void updateGrid(Video item) {
-        updateVideoGrid(obtainPlaylistObservable(item));
+        updateVideoGrid(obtainUploadsObservable(item));
     }
 
     private void disposeActions() {
@@ -211,13 +214,16 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         if (mediaGroup.getType() == MediaGroup.TYPE_SUGGESTIONS) {
             continuation = mItemManager.continueGroupObserve(mediaGroup);
         } else {
-            continuation = mGroupManager.continueGroupObserve(mediaGroup);
+            continuation = mContentService.continueGroupObserve(mediaGroup);
         }
 
         mScrollAction = continuation
                 .subscribe(
-                        //continueMediaGroup -> getView().update(VideoGroup.from(continueMediaGroup)),
-                        continueMediaGroup -> getView().update(VideoGroup.from(continueMediaGroup, group)),
+                        continueMediaGroup -> {
+                            VideoGroup newGroup = VideoGroup.from(group, continueMediaGroup);
+                            getView().update(newGroup);
+                            mDeArrowProcessor.process(newGroup);
+                        },
                         error -> {
                             Log.e(TAG, "continueGroup error: %s", error.getMessage());
                             if (getView() != null) {
@@ -252,15 +258,12 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
             disposeActions();
             mVideoItem = null;
             mRootGroup = mediaGroup;
-            ViewManager.instance(getContext()).startView(ChannelUploadsView.class);
             return;
         }
 
-        if (ViewManager.instance(getContext()).getTopView() != ChannelUploadsView.class) {
-            ViewManager.instance(getContext()).startView(ChannelUploadsView.class);
-        }
-
-        getView().update(VideoGroup.from(mediaGroup));
+        VideoGroup group = VideoGroup.from(mediaGroup);
+        getView().update(group);
+        mDeArrowProcessor.process(group);
 
         // Hide loading as long as first group received
         if (mediaGroup.getMediaItems() != null) {
@@ -273,7 +276,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
         disposeActions();
 
-        Observable<MediaGroup> group = mGroupManager.getGroupObserve(mediaItem);
+        Observable<MediaGroup> group = mContentService.getGroupObserve(mediaItem);
 
         mUpdateAction = group
                 .subscribe(

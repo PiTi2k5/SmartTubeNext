@@ -15,6 +15,8 @@ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.locale.LocaleUpdater;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngine;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
@@ -22,7 +24,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.SplashPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
-import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+import com.liskovsoft.youtubeapi.service.YouTubeHubService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +43,7 @@ public class ViewManager {
     private long mPrevThrottleTimeMS;
     private boolean mIsMoveToBackEnabled;
     private boolean mIsFinishing;
-    private boolean mIsSinglePlayerMode;
+    private boolean mIsPlayerOnlyModeEnabled;
     private long mPendingActivityMs;
     private Class<?> mPendingActivityClass;
 
@@ -124,16 +126,16 @@ public class ViewManager {
 
             Class<?> parentActivity = getTopActivity();
 
-            if (parentActivity == null && !mIsSinglePlayerMode) {
+            if (parentActivity == null && !mIsPlayerOnlyModeEnabled) {
                 parentActivity = getDefaultParent(activity);
             }
 
-            if (parentActivity == null) {
+            if (parentActivity == null || mIsPlayerOnlyModeEnabled) {
                 Log.d(TAG, "Parent activity name doesn't stored in registry. Exiting to Home...");
 
                 mIsMoveToBackEnabled = true;
 
-                if (mIsSinglePlayerMode) {
+                if (mIsPlayerOnlyModeEnabled) {
                     safeMoveTaskToBack(activity);
                 }
             } else {
@@ -156,7 +158,7 @@ public class ViewManager {
 
     public void startDefaultView() {
         mIsMoveToBackEnabled = false;
-        mIsSinglePlayerMode = false;
+        mIsPlayerOnlyModeEnabled = false;
 
         Class<?> lastActivity;
 
@@ -274,13 +276,17 @@ public class ViewManager {
         return false;
     }
 
-    public void setSinglePlayerMode(boolean enable) {
-        mActivityStack.clear();
-        mIsSinglePlayerMode = enable;
+    public void enablePlayerOnlyMode(boolean enable) {
+        // Ensure that we're not opening tube link from description dialog
+        if (enable && AppDialogPresenter.instance(mContext).isDialogShown()) {
+            return;
+        }
+
+        mIsPlayerOnlyModeEnabled = enable;
     }
 
     public void clearCaches() {
-        YouTubeMediaService.instance().invalidateCache();
+        YouTubeHubService.instance().invalidateCache();
         // Note, also deletes cached flags (internal cache)
         // Note, deletes cached apks (external cache)
         FileHelpers.deleteCache(mContext);
@@ -407,13 +413,25 @@ public class ViewManager {
     }
 
     /**
+     * Small delay to fix PIP transition bug (UI become unresponsive)
+     */
+    private void safeStartActivity(Context context, Intent intent) {
+        //if (PlaybackPresenter.instance(mContext).isInPipMode()) {
+        if (PlaybackPresenter.instance(mContext).getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_PIP) {
+            Utils.postDelayed(() -> safeStartActivityInt(context, intent), 50);
+        } else {
+            safeStartActivityInt(context, intent);
+        }
+    }
+
+    /**
      * Fix: java.lang.IllegalArgumentException<br/>
      * View=android.widget.TextView not attached to window manager
      */
-    private void safeStartActivity(Context context, Intent intent) {
+    private void safeStartActivityInt(Context context, Intent intent) {
         try {
             context.startActivity(intent);
-        } catch (IllegalArgumentException | ActivityNotFoundException e) {
+        } catch (IllegalArgumentException | ActivityNotFoundException | IndexOutOfBoundsException e) {
             Log.e(TAG, "Error when starting activity: %s", e.getMessage());
             MessageHelpers.showLongMessage(context, e.getLocalizedMessage());
         }
@@ -454,6 +472,20 @@ public class ViewManager {
         }
 
         return false;
+    }
+
+    public static MotherActivity getMotherActivity(Object view) {
+        MotherActivity motherActivity = null;
+
+        if (view instanceof Fragment && ((Fragment) view).getActivity() instanceof MotherActivity) {
+            motherActivity = ((MotherActivity) ((Fragment) view).getActivity());
+        }
+
+        if (view instanceof androidx.fragment.app.Fragment && ((androidx.fragment.app.Fragment) view).getActivity() instanceof MotherActivity) {
+            motherActivity = ((MotherActivity) ((androidx.fragment.app.Fragment) view).getActivity());
+        }
+
+        return motherActivity;
     }
 
     public boolean isPlayerInForeground() {

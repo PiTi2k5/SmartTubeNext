@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.common.utils;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -45,19 +46,26 @@ import androidx.core.graphics.ColorUtils;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
+
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.helpers.PermissionHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerManager;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.SplashPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.WebBrowserPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView;
+import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
+import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem.VideoPreset;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.track.MediaTrack;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -72,6 +80,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Utils {
     private static final String TASK_ID = RemoteControlWorker.class.getSimpleName();
@@ -150,7 +159,8 @@ public class Utils {
         //intent.setClass(context, ViewManager.instance(context).getActivity(SplashView.class));
         PackageManager packageManager = context.getPackageManager();
         if (intent.resolveActivity(packageManager) != null) {
-            context.startActivity(intent);
+            SplashPresenter.instance(context).applyNewIntent(intent);
+            //context.startActivity(intent);
         } else {
             // Fallback to the chooser dialog
             showMultiChooser(context, url);
@@ -199,7 +209,8 @@ public class Utils {
     public static boolean isAppInForeground() {
         ActivityManager.RunningAppProcessInfo appProcessInfo = new ActivityManager.RunningAppProcessInfo();
         ActivityManager.getMyMemoryState(appProcessInfo);
-        return appProcessInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+        // Skip situation when splash presenter still running
+        return appProcessInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && SplashPresenter.instance(null).getView() == null;
     }
 
     /**
@@ -270,26 +281,39 @@ public class Utils {
     /**
      * Volume: 0 - 100
      */
-    public static void setGlobalVolume(Context context, int volume) {
+    private static void setGlobalVolume(Context context, int volume, boolean normalize) {
         if (context != null) {
             AudioManager audioManager = (AudioManager) context.getSystemService(GLOBAL_VOLUME_SERVICE);
             if (audioManager != null) {
-                int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE) / 2; // max volume is too loud
-                audioManager.setStreamVolume(GLOBAL_VOLUME_TYPE, (int) Math.ceil(streamMaxVolume / 100f * volume), 0);
+                //int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE) / 2; // max volume is too loud
+                int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE);
+                if (normalize) {
+                    streamMaxVolume /= 2; // max volume is too loud
+                }
+                try {
+                    audioManager.setStreamVolume(GLOBAL_VOLUME_TYPE, (int) Math.ceil(streamMaxVolume / 100f * volume), 0);
+                } catch (SecurityException e) {
+                    // Not allowed to change Do Not Disturb state
+                    e.printStackTrace();
+                }
             }
         }
 
-        sIsGlobalVolumeFixed = getGlobalVolume(context) != volume;
+        sIsGlobalVolumeFixed = getGlobalVolume(context, normalize) != volume;
     }
 
     /**
      * Volume: 0 - 100
      */
-    public static int getGlobalVolume(Context context) {
+    private static int getGlobalVolume(Context context, boolean normalize) {
         if (context != null) {
             AudioManager audioManager = (AudioManager) context.getSystemService(GLOBAL_VOLUME_SERVICE);
             if (audioManager != null) {
-                int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE) / 2; // max volume is too loud
+                //int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE) / 2; // max volume is too loud
+                int streamMaxVolume = audioManager.getStreamMaxVolume(GLOBAL_VOLUME_TYPE);
+                if (normalize) {
+                    streamMaxVolume /= 2; // max volume is too loud
+                }
                 int streamVolume = audioManager.getStreamVolume(GLOBAL_VOLUME_TYPE);
 
                 return (int) Math.ceil(streamVolume / (streamMaxVolume / 100f));
@@ -299,8 +323,57 @@ public class Utils {
         return 100;
     }
 
-    public static boolean isGlobalVolumeFixed() {
+    private static boolean isGlobalVolumeFixed() {
         return sIsGlobalVolumeFixed;
+    }
+
+    public static int getVolume(Context context, PlayerManager player) {
+        return getVolume(context, player, false);
+    }
+
+    /**
+     * Volume: 0 - 100
+     */
+    public static int getVolume(Context context, PlayerManager player, boolean normalize) {
+        if (context != null) {
+            return Utils.isGlobalVolumeFixed() ? (int)(player.getVolume() * 100) : Utils.getGlobalVolume(context, normalize);
+        }
+
+        return 100;
+    }
+
+    public static void setVolume(Context context, PlayerManager player, int volume) {
+        setVolume(context, player, volume, false);
+    }
+
+    /**
+     * Volume: 0 - 100
+     */
+    @SuppressLint("StringFormatMatches")
+    public static void setVolume(Context context, PlayerManager player, int volume, boolean normalize) {
+        if (context != null) {
+            if (Utils.isGlobalVolumeFixed()) {
+                player.setVolume(volume / 100f);
+            } else {
+                Utils.setGlobalVolume(context, volume, normalize);
+            }
+            // Check that volume is set.
+            // Because global value may not be supported (see FireTV Stick).
+            MessageHelpers.showMessage(context, context.getString(R.string.volume, getVolume(context, player, normalize)));
+        }
+    }
+
+    public static void volumeUp(Context context, PlayerManager player, boolean up) {
+        if (player != null) {
+            int volume = Utils.getVolume(context, player);
+            final int delta = 10; // volume step
+
+            if (up) {
+                Utils.setVolume(context, player, Math.min(volume + delta, 100));
+            } else {
+                Utils.setVolume(context, player, Math.max(volume - delta, 0));
+            }
+        }
     }
 
     /**
@@ -529,6 +602,8 @@ public class Utils {
 
         LoadingManager.showLoading(context, true);
 
+        AtomicInteger atomicIndex = new AtomicInteger(0);
+
         MediaServiceManager.instance().loadChannelRows(item, group -> {
             LoadingManager.showLoading(context, false);
 
@@ -536,23 +611,31 @@ public class Utils {
                 return;
             }
 
-            if (group.size() == 1) {
-                // Start first video or open full list?
-                //if (group.get(0).getMediaItems() != null) {
-                //    PlaybackPresenter.instance(context).openVideo(Video.from(group.get(0).getMediaItems().get(0)));
-                //}
+            int type = group.get(0).getType();
 
-                // TODO: clear only once, on start
-                ChannelUploadsPresenter.instance(context).clear();
+            if (type == MediaGroup.TYPE_CHANNEL_UPLOADS) {
+                if (atomicIndex.incrementAndGet() == 1) {
+                    ChannelUploadsPresenter.instance(context).clear();
+                    ViewManager.instance(context).startView(ChannelUploadsView.class);
+                }
                 ChannelUploadsPresenter.instance(context).updateGrid(group.get(0));
-            } else {
-                // TODO: clear only once, on start
-                ChannelPresenter.instance(context).clear();
+            } else if (type == MediaGroup.TYPE_CHANNEL) {
+                if (atomicIndex.incrementAndGet() == 1) {
+                    ChannelPresenter.instance(context).clear();
+                    ChannelPresenter.instance(context).setChannel(item);
+                    ViewManager.instance(context).startView(ChannelView.class);
+                }
                 ChannelPresenter.instance(context).updateRows(group);
+            } else {
+                MessageHelpers.showMessage(context, "Unknown type of channel");
             }
         });
     }
 
+    /**
+     * NOTE: Doesn't work in Android 13<br/>
+     * java.lang.SecurityException: Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
+     */
     public static void sendKey(int key) {
         try {
             Instrumentation instrumentation = new Instrumentation();
@@ -563,6 +646,10 @@ public class Utils {
         }
     }
 
+    /**
+     * NOTE: Doesn't work in Android 13<br/>
+     * java.lang.SecurityException: Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
+     */
     public static void sendKey(KeyEvent keyEvent) {
         try {
             Instrumentation instrumentation = new Instrumentation();
@@ -700,5 +787,9 @@ public class Utils {
         }
 
         return result;
+    }
+
+    public static boolean isOculusQuest() {
+        return Helpers.getDeviceName().startsWith("Oculus Quest");
     }
 }

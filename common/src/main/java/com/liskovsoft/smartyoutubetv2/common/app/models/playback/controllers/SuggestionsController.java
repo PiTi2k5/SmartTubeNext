@@ -2,8 +2,8 @@ package com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers;
 
 import androidx.core.content.ContextCompat;
 import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.MediaService;
 import com.liskovsoft.mediaserviceinterfaces.data.ChapterItem;
+import com.liskovsoft.mediaserviceinterfaces.data.DislikeData;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
@@ -18,12 +18,13 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.SeekBarSegment;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.common.misc.DeArrowProcessor;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
-import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
-import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+import com.liskovsoft.youtubeapi.service.YouTubeHubService;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 
@@ -35,8 +36,10 @@ public class SuggestionsController extends PlayerEventListenerHelper {
     private final List<MetadataListener> mListeners = new ArrayList<>();
     private final List<Disposable> mActions = new ArrayList<>();
     private PlayerTweaksData mPlayerTweaksData;
+    private GeneralData mGeneralData;
     private MediaGroup mLastScrollGroup;
-    //private VideoGroup mCurrentGroup; // disable garbage collected
+    private MediaItemService mMediaItemService;
+    private DeArrowProcessor mDeArrowProcessor;
     private Video mNextVideo;
     private Video mPreviousVideo;
     private int mFocusCount;
@@ -61,6 +64,9 @@ public class SuggestionsController extends PlayerEventListenerHelper {
     @Override
     public void onInit() {
         mPlayerTweaksData = PlayerTweaksData.instance(getContext());
+        mGeneralData = GeneralData.instance(getContext());
+        mDeArrowProcessor = new DeArrowProcessor(getContext(), PlaybackPresenter.instance(getContext())::syncItem);
+        mMediaItemService = YouTubeHubService.instance().getMediaItemService();
     }
 
     @Override
@@ -71,7 +77,9 @@ public class SuggestionsController extends PlayerEventListenerHelper {
         //mCurrentGroup = video.getGroup(); // disable garbage collected
         appendNextSectionVideoIfNeeded(video);
         appendPreviousSectionVideoIfNeeded(video);
-        MediaServiceManager.instance().hideNotification(video);
+        if (mGeneralData.isHideWatchedFromNotificationsEnabled()) {
+            MediaServiceManager.instance().hideNotification(video);
+        }
     }
 
     /**
@@ -179,15 +187,14 @@ public class SuggestionsController extends PlayerEventListenerHelper {
 
         MediaGroup mediaGroup = group.getMediaGroup();
 
-        MediaItemService mediaItemManager = YouTubeMediaService.instance().getMediaItemService();
-
-        Disposable continueAction = mediaItemManager.continueGroupObserve(mediaGroup)
+        Disposable continueAction = mMediaItemService.continueGroupObserve(mediaGroup)
                 .subscribe(
                         continueMediaGroup -> {
                             getPlayer().showProgressBar(false);
 
-                            VideoGroup videoGroup = VideoGroup.from(continueMediaGroup, group);
+                            VideoGroup videoGroup = VideoGroup.from(group, continueMediaGroup);
                             getPlayer().updateSuggestions(videoGroup);
+                            mDeArrowProcessor.process(videoGroup);
 
                             // Merge remote queue with player's queue
                             Video video = getPlayer().getVideo();
@@ -218,10 +225,12 @@ public class SuggestionsController extends PlayerEventListenerHelper {
         if (getPlayer().containsMedia()) {
             video.isUpcoming = false; // live stream started
         }
-        video.sync(mediaItemMetadata, PlayerData.instance(getContext()).isAbsoluteDateEnabled());
+        video.sync(mediaItemMetadata);
         getPlayer().setVideo(video);
 
         getPlayer().setNextTitle(getNext() != null ? getNext().getTitle() : null);
+
+        appendDislikes(video);
     }
 
     public void loadSuggestions(Video video) {
@@ -237,14 +246,11 @@ public class SuggestionsController extends PlayerEventListenerHelper {
             return;
         }
 
-        MediaService service = YouTubeMediaService.instance();
-        MediaItemService mediaItemManager = service.getMediaItemService();
-
         Observable<MediaItemMetadata> observable;
 
         // NOTE: Load suggestions from mediaItem isn't robust. Because playlistId may be initialized from RemoteControlManager.
         // Video might be loaded from Channels section (has playlistParams)
-        observable = mediaItemManager.getMetadataObserve(video.videoId, video.getPlaylistId(), video.playlistIndex, video.playlistParams);
+        observable = mMediaItemService.getMetadataObserve(video.videoId, video.getPlaylistId(), video.playlistIndex, video.playlistParams);
 
         Disposable metadataAction = observable
                 .subscribe(
@@ -318,7 +324,7 @@ public class SuggestionsController extends PlayerEventListenerHelper {
         List<MediaGroup> suggestions = mediaItemMetadata.getSuggestions();
 
         if (suggestions == null) {
-            String msg = "loadSuggestions: Can't obtain suggestions for video: " + video.title;
+            String msg = "loadSuggestions: Can't obtain suggestions for video: " + video.getTitle();
             Log.e(TAG, msg);
             return;
         }
@@ -345,6 +351,7 @@ public class SuggestionsController extends PlayerEventListenerHelper {
                 }
 
                 getPlayer().updateSuggestions(videoGroup);
+                mDeArrowProcessor.process(videoGroup);
 
                 if (groupIndex == 0) {
                     focusAndContinueIfNeeded(videoGroup);
@@ -477,7 +484,7 @@ public class SuggestionsController extends PlayerEventListenerHelper {
         int index = findCurrentChapterIndex(group.getVideos());
 
         if (index != -1) {
-            String title = group.getVideos().get(index).title;
+            String title = group.getVideos().get(index).getTitle();
             getPlayer().focusSuggestedItem(index);
             getPlayer().setSeekPreviewTitle(title);
         }
@@ -534,7 +541,7 @@ public class SuggestionsController extends PlayerEventListenerHelper {
         }
     }
 
-    public void focusAndContinueIfNeeded(VideoGroup group) {
+    private void focusAndContinueIfNeeded(VideoGroup group) {
         Video video = getPlayer().getVideo();
 
         if (group == null || group.isEmpty() || video == null || !video.hasVideo()) {
@@ -546,7 +553,7 @@ public class SuggestionsController extends PlayerEventListenerHelper {
         if (index >= 0) { // continuation group starts with zero index
             Log.d(TAG, "Found current video index: %s", index);
             Video found = group.getVideos().get(index);
-            if (!found.isMix()) {
+            if (!found.isMix() || isSectionPlaylistEnabled(video)) {
                 getPlayer().focusSuggestedItem(found);
             }
             mFocusCount = 0; // Stop the continuation loop
@@ -633,6 +640,10 @@ public class SuggestionsController extends PlayerEventListenerHelper {
             return;
         }
 
+        if (dialogPresenter.isDialogShown() && getPlayer() != null && !getPlayer().isPlaying()) {
+            return;
+        }
+
         dialogPresenter.closeDialog(); // remove previous dialog
 
         if (chapter == null || getPlayer() == null || getPlayer().isOverlayShown() || getPlayer().isInPIPMode() ||
@@ -713,6 +724,24 @@ public class SuggestionsController extends PlayerEventListenerHelper {
 
     private boolean isSectionPlaylistEnabled(Video video) {
         return mPlayerTweaksData.isSectionPlaylistEnabled() && video != null && video.getGroup() != null &&
-                (video.playlistId == null || video.nextMediaItem == null) && (!video.isRemote || video.remotePlaylistId == null);
+                (video.playlistId == null || video.nextMediaItem == null || video.belongsToSearch()) && (!video.isRemote || video.remotePlaylistId == null);
+    }
+
+    private void appendDislikes(Video video) {
+        if (video == null || !mPlayerTweaksData.isLikesCounterEnabled()) {
+            return;
+        }
+
+        Observable<DislikeData> dislikeDataObserve = mMediaItemService.getDislikeDataObserve(video.videoId);
+
+        Disposable dislikeAction = dislikeDataObserve.subscribe(
+                dislikeData -> {
+                    video.sync(dislikeData);
+                    getPlayer().setVideo(video);
+                },
+                error -> Log.e(TAG, "Dislike not working...")
+        );
+
+        mActions.add(dislikeAction);
     }
 }

@@ -43,7 +43,7 @@
     <string name="section_is_empty">Hier ist nichts drin</string>
     <string name="dialog_add_to_playlist">Hinzufügen/Entfernen aus Wiedergabeliste</string>
     <string name="msg_signed_users_only">Nur angemeldete Nutzer</string>
-    <string name="msg_cant_load_content">Inhalt kann nicht geladen werden.\n1) Überprüfen Sie Datum und Uhrzeit auf dem Gerät.\n2) Überprüfen Sie die Internetverbindung.\n3) Überprüfen Sie Ihre Proxy-Einstellungen.\n4) Versuchen Sie, sich mit Ihrem Konto anzumelden.\n5) Vielleicht ist hier nichts drin.</string>
+    <string name="msg_cant_load_content">Inhalt kann nicht geladen werden.\n1) Aktivieren Sie den Wiedergabeverlauf.\n2) Überprüfen Sie Datum und Uhrzeit auf dem Gerät.\n3) Überprüfen Sie die Internetverbindung.\n4) Überprüfen Sie Ihre Proxy-Einstellungen.\n5) Versuchen Sie, sich mit Ihrem Konto anzumelden.\n6) Vielleicht ist hier nichts drin.</string>
     <string name="title_video_presets">Video-Voreinstellungen</string>
     <string name="settings_accounts">Konten</string>
     <string name="settings_left_panel">Kategorien bearbeiten</string>
@@ -136,6 +136,7 @@
     <string name="player_show_ending_time">Endzeit im Bedienfeld anzeigen</string>
     <string name="open_channel_uploads">Kanal-Videos öffnen</string>
     <string name="app_exit_shortcut">App beenden</string>
+    <string name="player_exit_shortcut">Player beenden</string>
     <string name="app_exit_none">Nicht beenden</string>
     <string name="app_double_back_exit">2x Zurück-Taste</string>
     <string name="app_single_back_exit">1x Zurück-Taste</string>
@@ -153,7 +154,7 @@
     <string name="player_seek_preview_carousel">Mehrere Bilder</string>
     <string name="player_seek_preview_carousel_slow">Mehrere Bilder (langsam, nach Keyframes)</string>
     <string name="player_seek_preview_carousel_fast">Mehrere Bilder (schnell, ungenaue Vorschau)</string>
-    <string name="unsubscribe_from_channel">Kanal-Abo beenden</string>
+    <string name="unsubscribe_from_channel">Kanal nicht mehr abonnieren</string>
     <string name="card_title_lines_num">Zeilenanzahl in Titeln</string>
     <string name="card_auto_scrolled_title">Auto-Scrollen in Titeln</string>
     <string name="share_link">Link teilen</string>
@@ -219,6 +220,9 @@
     <string name="header_uploads">Uploads</string>
     <string name="player_show_global_clock">Uhr immer auf dem Bildschirm anzeigen</string>
     <string name="player_show_global_ending_time">Endzeit immer auf dem Bildschirm anzeigen</string>
+    <string name="app_corner_clock">Start: Uhr in der rechten oberen Ecke</string>
+    <string name="player_corner_clock">Player: Uhr in der rechten oberen Ecke</string>
+    <string name="player_corner_ending_time">Player: Endzeit in der rechten oberen Ecke</string>
     <string name="uploads_old_look">Altes Aussehen der Uploads-Kategorie</string>
     <string name="background_playback_activation">Hintergrund-Wiedergabe (Taste)</string>
     <string name="channels_old_look">Altes Aussehen der Kanäle-Kategorie</string>
@@ -227,6 +231,8 @@
     <string name="pin_unpin_from_sidebar">Hinzufügen/Entfernen aus Seitenleiste</string>
     <string name="pin_unpin_playlist">Wiedergabeliste zur Seitenleiste hinzufügen/entfernen</string>
     <string name="pin_unpin_channel">Kanal zur Seitenleiste hinzufügen/entfernen</string>
+    <string name="pin_playlist">Wiedergabeliste zur Seitenleiste hinzufügen</string>
+    <string name="pin_channel">Kanal zur Seitenleiste hinzufügen</string>
     <string name="pinned_to_sidebar">Zur Seitenleiste hinzugefügt</string>
     <string name="unpin_from_sidebar">Entfernen aus Seitenleiste</string>
     <string name="unpinned_from_sidebar">Aus Seitenleiste entfernt</string>
@@ -236,6 +242,7 @@
     <string name="card_text_scroll_factor">Scrollgeschwindigkeit des Kartentextes</string>
     <string name="preferred_update_source">Update-Quelle auswählen</string>
     <string name="hide_shorts">Shorts in Abos ausblenden</string>
+    <string name="hide_shorts_channel">Shorts in Kanäle ausblenden</string>
     <string name="key_remapping">Tastenbelegung anpassen</string>
     <string name="screen_dimming">Bildschirm dimmen</string>
     <string name="removed_from_playback_queue">Aus Warteschlange entfernt</string>
@@ -304,6 +311,7 @@
     <string name="action_pip">Bild-in-Bild</string>
     <string name="action_video_info">Video-Beschreibung</string>
     <string name="action_screen_off">Bildschirm aus</string>
+    <string name="action_sound_off">Ton aus</string>
     <string name="action_playback_queue">Warteschlange</string>
     <string name="action_video_speed">Video-Geschwindigkeit</string>
     <string name="action_subtitles">Untertitel anzeigen</string>
@@ -328,6 +336,8 @@
     <string name="msg_player_error_audio_source">AUDIO URL funktioniert nicht oder falsche Geräte-Uhrzeit.\nNormalerweise handelt es sich um ein Problem der App.</string>
     <string name="msg_player_error_subtitle_source">UNTERTITEL URL funktioniert nicht oder falsche Geräte-Uhrzeit.\Normalerweise handelt es sich um ein Problem der App.</string>
     <string name="hide_upcoming">Anstehende Videos in Abos ausblenden</string>
+    <string name="hide_upcoming_channel">Anstehende Videos in Kanäle ausblenden</string>
+    <string name="hide_upcoming_home">Anstehende Videos in Start ausblenden</string>
     <string name="search_background_playback">Bild-in-Bild öffnen bei Suche/Kanal öffnen</string>
     <string name="trending_row_name">Trends</string>
     <string name="player_seek_type">Verhalten beim Spulen</string>
@@ -338,6 +348,7 @@
     <string name="finish_on_disconnect">App nach dem Trennen des Telefons/Tablets beenden</string>
     <string name="update_error">Update-Fehler</string>
     <string name="hide_shorts_from_history">Shorts in Verlauf ausblenden</string>
+    <string name="hide_shorts_from_trending">Shorts in Trends ausblenden</string>
     <string name="disable_screensaver">Bildschirmschoner deaktivieren</string>
     <string name="description_not_found">Beschreibung nicht gefunden</string>
     <string name="proxy_port_hint">Proxy-Port</string>
@@ -394,6 +405,7 @@
     <string name="player_volume">Lautstärke</string>
     <string name="play_video">Abspielen</string>
     <string name="remember_position_of_short_videos">Position von kurzen Videos merken (weniger als 5 Min.)</string>
+    <string name="remember_position_of_live_videos">Position von Live-Streams merken</string>
     <string name="player_show_tooltips">Schaltflächen-Tooltips anzeigen</string>
     <string name="action_like_unset">Mag ich</string>
     <string name="action_dislike_unset">Mag ich nicht</string>
@@ -405,6 +417,7 @@
     <string name="pressing_back">durch Drücken von BACK</string>
     <string name="player_number_key_seek">Spulen mit Zifferntasten</string>
     <string name="save_remove_playlist">Wiedergabeliste zur Wiedergabelisten-Kategorie hinzufügen/entfernen</string>
+    <string name="save_playlist">Wiedergabeliste zur Wiedergabelisten-Kategorie hinzufügen</string>
     <string name="remove_playlist">Wiedergabeliste dauerhaft aus Wiedergabelisten-Kategorie entfernen</string>
     <string name="removed_from_playlists">Entfernt aus der Wiedergabelisten-Kategorie</string>
     <string name="saved_to_playlists">Hinzugefügt zur Wiedergabelisten-Kategorie</string>
@@ -495,6 +508,7 @@
     <string name="thumb_quality_middle">Mitte des Videos</string>
     <string name="thumb_quality_end">Ende des Videos</string>
     <string name="content_block_status">Status von SponsorBlock prüfen</string>
+    <string name="dearrow_status">Status von DeArrow prüfen</string>
     <string name="player_show_quality_info_bitrate">Bitrate zu den Qualitätsinfos hinzufügen</string>
     <string name="player_speed_button_old_behavior">Altes Verhalten der Geschwindigkeitstaste wiederherstellen</string>
     <string name="protect_settings_with_password">Alle Einstellungen mit einem Passwort schützen</string>
@@ -544,8 +558,7 @@
     <string name="player_network_stack">Netzwerkstack</string>
     <string name="cronet_desc">Cronet ist der Chromium-Netzwerkstack. Cronet kann die Latenz verringern und die Netzwerkleistung erhöhen, was bei Pufferproblemen helfen kann.</string>
     <string name="unlock_all_formats">Alle Video-Formate freischalten</string>
-    <string name="unlock_all_formats_desc">Bei einigen Geräten meldet die Firmware fälschlicherweise, dass einige Formate nicht unterstützt werden, auch wenn sie es sind.\n
-        (z.B. melden 1080p-Smart-TVs oft, dass 4k nicht unterstützt wird).</string>
+    <string name="unlock_all_formats_desc">Bei einigen Geräten meldet die Firmware fälschlicherweise, dass einige Formate nicht unterstützt werden, auch wenn sie es sind.\n(z.B. melden 1080p-Smart-TVs oft, dass 4k nicht unterstützt wird).</string>
     <string name="okhttp_desc">Dieser Netzwerkstack ist am langsamsten, hat aber eine gute Stabilität.</string>
     <string name="select_channel_section">Die entsprechende Kategorie öffnen, wenn die App über ATV-Kanäle gestartet wird</string>
     <string name="enable_voice_search_desc">Die offizielle App wird durch eine sogenannte Bridge ersetzt. Eine Bridge hilft dabei, globale Suchanfragen an unsere App zu übertragen.</string>
@@ -554,10 +567,10 @@
     <string name="disable_stream_buffer">Puffer für Streams deaktivieren</string>
     <string name="disable_stream_buffer_desc">Fix für Situationen, in denen der Stream sehr verzögert ist. Hinweis: Der Stream kann anfangen zu hängen.</string>
     <string name="sony_frame_drop_fix">Frame-Drop-Fix #1</string>
-    <string name="sony_frame_drop_fix_desc">Behebt Verzögerungen/Lags auf Sony-TV und einigen anderen Geräten. Hinweis: Mögliche Probleme mit der Audio-Synchronisation.
-    </string>
+    <string name="sony_frame_drop_fix_desc">Behebt Verzögerungen/Lags auf Sony-TV und einigen anderen Geräten. Hinweis: Mögliche Probleme mit der Audio-Synchronisation.</string>
     <string name="audio_language">Audio-Sprache</string>
     <string name="old_home_look">Altes Aussehen der Startseite</string>
+    <string name="old_channel_look">Altes Aussehen der Kanäle-Kategorie</string>
     <string name="hide_shorts_everywhere">Shorts überall ausblenden</string>
     <string name="update_found">Update</string>
     <string name="volume_boost_warning">Einstellungen über dem Grenzwert können die Lautsprecher möglicherweise beschädigen</string>
@@ -608,7 +621,32 @@
     <string name="prefer_avc_over_vp9_desc">ACHTUNG: Maximal 1080p</string>
     <string name="play_next">Als Nächstes abspielen</string>
     <string name="hide_watched_from_subscriptions">Gesehene Videos in Abos ausblenden</string>
+    <string name="hide_watched_from_notifications">Gesehene Videos in Benachrichtigungen ausblenden</string>
     <string name="hide_unwanted_content">Unerwünschte Inhalte ausblenden</string>
     <string name="hide_watched_from_home">Gesehene Videos in Start ausblenden</string>
     <string name="remote_control_permission">Hintergrund-Fernsteuerung benötigt Overlay-Berechtigung</string>
+    <string name="login_from_browser">Anmeldung über Browser</string>
+    <string name="disable_remote_history">Verlauf bei Verwendung der Fernsteuerung deaktivieren</string>
+    <string name="keyboard_fix">Reparieren der Anzeige der Tastatur beim Drücken der OK-Taste (G20s und andere)</string>
+    <string name="nothing_found">Nichts gefunden</string>
+    <string name="auto_frame_rate_desc">Diese Option verhindert Ruckeln in Szenen, in denen sich die Kamera schnell bewegt, z.B. bei Sportübertragungen</string>
+    <string name="channel_filter_hint">Kanäle filtern</string>
+    <string name="player_loop_shorts">Shorts wiederholen</string>
+    <string name="player_quick_shorts_skip">Shorts überspringen mit Links/Rechts-Tasten</string>
+    <string name="channels_filter">Liste der Kanäle innerhalb der Kanäle-Kategorie filtern</string>
+    <string name="channel_search_bar">Suchleiste innerhalb der Kanalseite</string>
+    <string name="header_sports">Sport</string>
+    <string name="keep_finished_activities">Beendete Aktivitäten behalten</string>
+    <string name="disable_channels_service">Kanäle-Dienst deaktivieren</string>
+    <string name="replace_titles">Titel ersetzen</string>
+    <string name="enable">Aktivieren</string>
+    <string name="more_info">Mehr Infos</string>
+    <string name="about_sponsorblock">Über SponsorBlock</string>
+    <string name="about_dearrow">Über DeArrow</string>
+    <string name="replace_thumbnails">Vorschaubilder ersetzen</string>
+    <string name="crowdsourced_thumbnails">Community-basierte Vorschaubilder</string>
+    <string name="crowdsoursed_titles">Community-basierte Titel</string>
+    <string name="dearrow_not_submitted_thumbs">Quelle für nicht eingereichte Vorschaubilder</string>
+    <string name="pitch_effect">Tonhöhen-Effekt</string>
+    <string name="fullscreen_mode">Vollbildmodus (ohne Systemleisten)</string>
 </resources>
