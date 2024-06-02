@@ -5,9 +5,9 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 
-import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
+import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
@@ -626,15 +626,15 @@ public class AppDialogUtil {
     }
 
     public static OptionItem createExcludeFromContentBlockButton(
-            Context context,  Video original, MediaServiceManager serviceManager, Runnable onClose) {
+            Context context,  Video video, MediaServiceManager serviceManager, Runnable onClose) {
         return UiOptionItem.from(
                 context.getString(
-                        ContentBlockData.instance(context).isChannelExcluded(original.channelId) ?
+                        ContentBlockData.instance(context).isChannelExcluded(video.channelId) ?
                                 R.string.content_block_stop_excluding_channel :
                                 R.string.content_block_exclude_channel),
                 optionItem -> {
-                    if (original.hasChannel()) {
-                        ContentBlockData.instance(context).toggleExcludeChannel(original.channelId);
+                    if (video.hasChannel()) {
+                        ContentBlockData.instance(context).toggleExcludeChannel(video.channelId);
                         if (onClose != null) {
                             onClose.run();
                         }
@@ -642,10 +642,10 @@ public class AppDialogUtil {
                         MessageHelpers.showMessage(context, R.string.wait_data_loading);
 
                         serviceManager.loadMetadata(
-                                original,
+                                video,
                                 metadata -> {
-                                    original.sync(metadata);
-                                    ContentBlockData.instance(context).excludeChannel(original.channelId);
+                                    video.sync(metadata);
+                                    ContentBlockData.instance(context).excludeChannel(video.channelId);
                                     if (onClose != null) {
                                         onClose.run();
                                     }
@@ -658,7 +658,9 @@ public class AppDialogUtil {
     public static OptionCategory createSpeedListCategory(Context context, PlayerManager playbackController, PlayerData playerData) {
         List<OptionItem> items = new ArrayList<>();
 
-        for (float speed : PlayerTweaksData.instance(context).isLongSpeedListEnabled() ? Utils.SPEED_LIST_LONG : Utils.SPEED_LIST_SHORT) {
+        PlayerTweaksData data = PlayerTweaksData.instance(context);
+        for (float speed : data.isLongSpeedListEnabled() ? Utils.SPEED_LIST_LONG :
+                data.isExtraLongSpeedListEnabled() ? Utils.SPEED_LIST_EXTRA_LONG : Utils.SPEED_LIST_SHORT) {
             items.add(UiOptionItem.from(
                     String.valueOf(speed),
                     optionItem -> {
@@ -710,6 +712,10 @@ public class AppDialogUtil {
                 option -> playerTweaksData.enableLongSpeedList(option.isSelected()),
                 playerTweaksData.isLongSpeedListEnabled()));
 
+        options.add(UiOptionItem.from(context.getString(R.string.player_extra_long_speed_list),
+                option -> playerTweaksData.enableExtraLongSpeedList(option.isSelected()),
+                playerTweaksData.isExtraLongSpeedListEnabled()));
+
         String title = context.getString(R.string.player_other);
 
         return OptionCategory.from(PLAYER_SPEED_MISC_ID, OptionCategory.TYPE_CHECKBOX_LIST, title, options);
@@ -759,6 +765,39 @@ public class AppDialogUtil {
         }
 
         dialogPresenter.appendRadioCategory(context.getString(R.string.seek_interval), options);
+    }
+
+    public static void removeFromWatchLaterPlaylist(Context context, Video video) {
+        removeFromWatchLaterPlaylist(context, video, null);
+    }
+
+    public static void removeFromWatchLaterPlaylist(Context context, Video video, Runnable onSuccess) {
+        if (video == null || !YouTubeSignInService.instance().isSigned()) {
+            return;
+        }
+
+        MediaItemService itemManager = YouTubeMediaItemService.instance();
+
+        Disposable playlistsInfoAction = itemManager.getPlaylistsInfoObserve(video.videoId)
+                .subscribe(
+                        videoPlaylistInfos -> {
+                            PlaylistInfo watchLater = videoPlaylistInfos.get(0);
+
+                            if (watchLater.isSelected()) {
+                                Observable<Void> editObserve = itemManager.removeFromPlaylistObserve(watchLater.getPlaylistId(), video.videoId);
+
+                                RxHelper.execute(editObserve, () -> {
+                                    if (onSuccess != null) {
+                                        onSuccess.run();
+                                    }
+                                });
+                            }
+                        },
+                        error -> {
+                            // Fallback to something on error
+                            Log.e(TAG, "Get playlists error: %s", error.getMessage());
+                        }
+                );
     }
 
     public static void showAddToPlaylistDialog(Context context, Video video, VideoMenuCallback callback) {

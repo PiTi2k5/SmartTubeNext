@@ -60,6 +60,7 @@ import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.ExoPlayerInitialize
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.SubtitleManager;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.versions.renderer.CustomOverridesRenderersFactory;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.versions.selector.RestoreTrackSelector;
+import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
@@ -115,7 +116,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     private int mPlaybackMode = PlayerEngine.BACKGROUND_MODE_DEFAULT;
     private MediaSessionCompat mMediaSession;
     private MediaSessionConnector mMediaSessionConnector;
-    private long mResumeTimeMs;
     private Boolean mIsControlsShownPreviously;
     private Video mPendingFocus;
 
@@ -205,8 +205,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         mEventListener.onViewResumed();
 
         showHideWidgets(true); // PIP mode fix
-
-        mResumeTimeMs = System.currentTimeMillis();
     }
 
     @Override
@@ -335,7 +333,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
      */
     public void maybeReleasePlayer() {
         // Inside dialogs we could change engine settings on fly
-        if (AppDialogPresenter.instance(getContext()).isDialogShown()) {
+        if (AppDialogPresenter.instance(getContext()).isDialogShown() ||
+                (isBackgroundPlaybackEnabled() && Utils.isHardScreenOff(getContext()))) {
             Log.d(TAG, "releasePlayer: Engine release is blocked by dialog. Exiting...");
             return;
         }
@@ -548,15 +547,15 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
                 // Fix exoplayer pause after activity is resumed (AFR switching).
                 // It's tied to activity state transitioning because window has different mode.
                 // NOTE: may be a problems with background playback or bluetooth button events
-                if (System.currentTimeMillis() - mResumeTimeMs < 5_000 ||
-                        (!isResumed() && !isInPIPMode() && !AppDialogPresenter.instance(getContext()).isDialogShown())
-                ) {
-                    return false;
-                }
-
-                //if (System.currentTimeMillis() - mResumeTimeMs < 5_000) {
+                //if (System.currentTimeMillis() - mResumeTimeMs < 5_000 ||
+                //        (!isResumed() && !isInPIPMode() && !AppDialogPresenter.instance(getContext()).isDialogShown())
+                //) {
                 //    return false;
                 //}
+
+                if (System.currentTimeMillis() - PlayerData.instance(getContext()).getAfrSwitchTimeMs() < 5_000) {
+                    return false;
+                }
 
                 return super.dispatchSetPlayWhenReady(player, playWhenReady);
             }
@@ -842,19 +841,19 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         CharSequence result = video.getSecondTitle();
 
         if (getContext() != null && video.isLive) {
-            result = TextUtils.concat( result, " ", Video.TERTIARY_TEXT_DELIM, Helpers.NON_BREAKING_SPACE, Utils.color(getContext().getString(R.string.badge_live), ContextCompat.getColor(getContext(), R.color.red)));
+            result = TextUtils.concat( result, " ", Video.TERTIARY_TEXT_DELIM, " ", Utils.color(getContext().getString(R.string.badge_live), ContextCompat.getColor(getContext(), R.color.red)));
         }
 
         if (getContext() != null && video.likeCount != null) {
-            result = TextUtils.concat(result, " ", Video.TERTIARY_TEXT_DELIM, Helpers.NON_BREAKING_SPACE, video.likeCount, Helpers.NON_BREAKING_SPACE, Helpers.THUMB_UP); // color of thumb cannot be changed
+            result = TextUtils.concat(result, " ", Video.TERTIARY_TEXT_DELIM, " ", video.likeCount, Helpers.NON_BREAKING_SPACE, Helpers.THUMB_UP); // color of thumb cannot be changed
         }
 
         if (getContext() != null && video.dislikeCount != null) {
-            result = TextUtils.concat(result, " ", Video.TERTIARY_TEXT_DELIM, Helpers.NON_BREAKING_SPACE, video.dislikeCount, Helpers.NON_BREAKING_SPACE, Helpers.THUMB_DOWN); // color of thumb cannot be changed
+            result = TextUtils.concat(result, " ", Video.TERTIARY_TEXT_DELIM, " ", video.dislikeCount, Helpers.NON_BREAKING_SPACE, Helpers.THUMB_DOWN); // color of thumb cannot be changed
         }
 
         if (getContext() != null && video.subscriberCount != null) {
-            result = TextUtils.concat(result, " ", Video.TERTIARY_TEXT_DELIM, Helpers.NON_BREAKING_SPACE, video.subscriberCount.replace(" ", Helpers.NON_BREAKING_SPACE));
+            result = TextUtils.concat(result, " ", Video.TERTIARY_TEXT_DELIM, " ", video.subscriberCount.replace(" ", Helpers.NON_BREAKING_SPACE));
         }
 
         return result;
@@ -1626,5 +1625,11 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
      */
     private boolean forbidShowOverlay(boolean show) {
         return show && isInPIPMode();
+    }
+
+    private boolean isBackgroundPlaybackEnabled() {
+        int shortcut = GeneralData.instance(getContext()).getBackgroundPlaybackShortcut();
+
+        return shortcut == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_HOME || shortcut == GeneralData.BACKGROUND_PLAYBACK_SHORTCUT_HOME_BACK;
     }
 }

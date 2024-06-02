@@ -20,7 +20,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.transition.Transition;
-import com.liskovsoft.mediaserviceinterfaces.data.Account;
+import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
@@ -302,8 +302,9 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         Account current = MediaServiceManager.instance().getSelectedAccount();
 
         if (current != null && current.getAvatarImageUrl() != null) {
-            loadIcon(mAccountView, current.getAvatarImageUrl());
-            TooltipCompatHandler.setTooltipText(mAccountView, current.getName() != null ? current.getName() : current.getEmail());
+            loadIcon(mAccountView, current.getAvatarImageUrl(), false);
+            String accountName = current.getName() != null ? current.getName() : current.getEmail();
+            TooltipCompatHandler.setTooltipText(mAccountView, Utils.updateTooltip(getContext(), accountName));
         } else {
             Colors orbColors = mAccountView.getOrbColors();
             mAccountView.setOrbColors(new Colors(orbColors.color, orbColors.brightColor, ContextCompat.getColor(getContext(), R.color.orb_icon_color)));
@@ -320,19 +321,19 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         // Use delay to fix icon initialization on app boot
         new Handler(Looper.myLooper()).postDelayed(() -> {
             Locale locale = LocaleUtility.getCurrentLocale(getContext());
-            loadIcon(mLanguageView, Utils.getCountryFlagUrl(locale.getCountry()));
+            loadIcon(mLanguageView, Utils.getCountryFlagUrl(locale.getCountry()), true); // flag server could be down
             TooltipCompatHandler.setTooltipText(mLanguageView, String.format("%s (%s)", locale.getDisplayCountry(), locale.getDisplayLanguage()));
         }, 100);
     }
 
-    private void loadIcon(SearchOrbView view, String url) {
+    private void loadIcon(SearchOrbView view, String url, boolean useCache) {
         if (view == null) {
             return;
         }
 
         // The view with GONE visibility has zero width and height
         if (view.getWidth() <= 0 || view.getHeight() <= 0) {
-            Utils.postDelayed(() -> loadIcon(view, url), 500);
+            Utils.postDelayed(() -> loadIcon(view, url, useCache), 500);
             return;
         }
 
@@ -349,18 +350,18 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         }
 
         try {
-            loadIcon(context, view, url, mIconWidth, mIconHeight);
+            loadIcon(context, view, url, mIconWidth, mIconHeight, useCache);
         } catch (ExceptionInInitializerError e) {
             // Glide Kivi error
             e.printStackTrace();
         }
     }
 
-    private static void loadIcon(Context context, SearchOrbView view, String url, int iconWidth, int iconHeight) {
+    private static void loadIcon(Context context, SearchOrbView view, String url, int iconWidth, int iconHeight, boolean useCache) {
         Glide.with(context)
                 .load(url)
                 .apply(ViewUtil.glideOptions())
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .diskCacheStrategy(useCache ? DiskCacheStrategy.ALL : DiskCacheStrategy.NONE)
                 .circleCrop() // resize image
                 .into(new SimpleTarget<Drawable>(iconWidth, iconHeight) {
                     @Override
