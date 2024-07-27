@@ -18,7 +18,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.youtubeapi.common.helpers.ServiceHelper;
-import com.liskovsoft.youtubeapi.service.YouTubeMotherService;
+import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItem;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -88,6 +88,7 @@ public final class Video {
     public boolean deArrowProcessed;
     public boolean isLiveEnd;
     private int startSegmentNum;
+    private long liveDurationMs;
     private WeakReference<VideoGroup> group; // Memory leak fix. Used to get next page when scrolling.
     public List<NotificationState> notificationStates;
 
@@ -366,7 +367,7 @@ public final class Video {
         result.channelId = Helpers.parseStr(split[6]);
         result.bgImageUrl = Helpers.parseStr(split[7]);
         result.cardImageUrl = Helpers.parseStr(split[8]);
-        result.mediaItem = YouTubeMotherService.deserializeMediaItem(Helpers.parseStr(split[9]));
+        result.mediaItem = YouTubeMediaItem.deserializeMediaItem(Helpers.parseStr(split[9]));
         result.playlistParams = Helpers.parseStr(split[10]);
         result.sectionId = Helpers.parseInt(split[11]);
         result.reloadPageKey = Helpers.parseStr(split[12]);
@@ -379,7 +380,7 @@ public final class Video {
     @Override
     public String toString() {
         return Helpers.mergeObj(id, category, title, videoId, videoUrl, playlistId, channelId, bgImageUrl, cardImageUrl,
-                YouTubeMotherService.serialize(mediaItem), playlistParams, sectionId, getReloadPageKey(), itemType);
+                YouTubeMediaItem.serializeMediaItem(mediaItem), playlistParams, sectionId, getReloadPageKey(), itemType);
     }
 
     //@Override
@@ -715,8 +716,13 @@ public final class Video {
             return 0;
         }
 
+        // Disable updates if stream ended while watching
+        if (!isLive) {
+            return liveDurationMs;
+        }
+
         // Is stream real length may exceeds calculated length???
-        long liveDurationMs = System.currentTimeMillis() - startTimeMs;
+        liveDurationMs = System.currentTimeMillis() - startTimeMs;
         return liveDurationMs > 0 ? liveDurationMs : 0;
     }
 

@@ -25,11 +25,12 @@ import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.misc.TickleManager;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MainPlayerController implements PlayerEventListener {
     private static final String TAG = MainPlayerController.class.getSimpleName();
-    private final ArrayList<PlayerEventListener> mEventListeners = new ArrayList<PlayerEventListener>() {
+    private final List<PlayerEventListener> mEventListeners = new CopyOnWriteArrayList<PlayerEventListener>() {
         @Override
         public boolean add(PlayerEventListener listener) {
             ((PlayerEventListenerHelper) listener).setMainController(MainPlayerController.this);
@@ -49,14 +50,26 @@ public class MainPlayerController implements PlayerEventListener {
         }
 
         // NOTE: position matters!!!
-        mEventListeners.add(new AutoFrameRateController());
-        mEventListeners.add(new PlayerUIController());
-        mEventListeners.add(new HQDialogController());
+        //mEventListeners.add(new AutoFrameRateController());
+        //mEventListeners.add(new PlayerUIController());
+        //mEventListeners.add(new HQDialogController());
+        //mEventListeners.add(new VideoStateController());
+        //mEventListeners.add(new SuggestionsController());
+        //mEventListeners.add(new VideoLoaderController());
+        //mEventListeners.add(new RemoteController(context));
+        //mEventListeners.add(new ContentBlockController());
+        //mEventListeners.add(new ChatController());
+        //mEventListeners.add(new CommentsController());
+
+        // NOTE: position matters!!!
         mEventListeners.add(new VideoStateController());
         mEventListeners.add(new SuggestionsController());
         mEventListeners.add(new VideoLoaderController());
         mEventListeners.add(new RemoteController(context));
         mEventListeners.add(new ContentBlockController());
+        mEventListeners.add(new AutoFrameRateController());
+        mEventListeners.add(new PlayerUIController());
+        mEventListeners.add(new HQDialogController());
         mEventListeners.add(new ChatController());
         mEventListeners.add(new CommentsController());
     }
@@ -260,11 +273,6 @@ public class MainPlayerController implements PlayerEventListener {
     }
 
     @Override
-    public void onRepeatModeClicked(int modeIndex) {
-        process(listener -> listener.onRepeatModeClicked(modeIndex));
-    }
-
-    @Override
     public void onVideoLoaded(Video item) {
         process(listener -> listener.onVideoLoaded(item));
     }
@@ -316,11 +324,6 @@ public class MainPlayerController implements PlayerEventListener {
     @Override
     public void onLikeClicked(boolean like) {
         process(listener -> listener.onLikeClicked(like));
-    }
-
-    @Override
-    public void onChannelClicked() {
-        process(PlayerUiEventListener::onChannelClicked);
     }
 
     @Override

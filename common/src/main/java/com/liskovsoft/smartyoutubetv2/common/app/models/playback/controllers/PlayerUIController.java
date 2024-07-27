@@ -4,7 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.KeyEvent;
 import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.yt.MotherService;
+import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState;
@@ -18,7 +18,7 @@ import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngine;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
@@ -39,7 +39,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
-import com.liskovsoft.youtubeapi.service.YouTubeMotherService;
+import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import com.liskovsoft.youtubeapi.service.YouTubeSignInService;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -52,7 +52,6 @@ public class PlayerUIController extends PlayerEventListenerHelper {
     private static final long SUGGESTIONS_RESET_TIMEOUT_MS = 500;
     private final Handler mHandler;
     private final MediaItemService mMediaItemService;
-    private VideoLoaderController mVideoLoader;
     private SuggestionsController mSuggestionsController;
     private PlayerData mPlayerData;
     private PlayerTweaksData mPlayerTweaksData;
@@ -79,14 +78,13 @@ public class PlayerUIController extends PlayerEventListenerHelper {
     public PlayerUIController() {
         mHandler = new Handler(Looper.getMainLooper());
 
-        MotherService service = YouTubeMotherService.instance();
+        ServiceManager service = YouTubeServiceManager.instance();
         mMediaItemService = service.getMediaItemService();
     }
 
     @Override
     public void onInit() {
         mSuggestionsController = getController(SuggestionsController.class);
-        mVideoLoader = getController(VideoLoaderController.class);
         mPlayerData = PlayerData.instance(getContext());
         mPlayerTweaksData = PlayerTweaksData.instance(getContext());
 
@@ -123,7 +121,7 @@ public class PlayerUIController extends PlayerEventListenerHelper {
 
         boolean isHandled = handleBackKey(keyCode) || handleMenuKey(keyCode) ||
                 handleConfirmKey(keyCode) || handleStopKey(keyCode) || handleNumKeys(keyCode) ||
-                handlePlayPauseKey(keyCode) || handleShortsNavigation(keyCode);
+                handlePlayPauseKey(keyCode) || handleLeftRightSkip(keyCode);
 
         if (isHandled) {
             return true; // don't show UI
@@ -132,12 +130,6 @@ public class PlayerUIController extends PlayerEventListenerHelper {
         enableUiAutoHideTimeout();
 
         return false;
-    }
-
-    @Override
-    public void onChannelClicked() {
-        startTempBackgroundMode(ChannelPresenter.class);
-        ChannelPresenter.instance(getContext()).openChannel(getPlayer().getVideo());
     }
 
     @Override
@@ -155,7 +147,9 @@ public class PlayerUIController extends PlayerEventListenerHelper {
 
         // Match found
         if (getPlayer().getSubtitleFormats().contains(mPlayerData.getLastSubtitleFormat())) {
-            getPlayer().setFormat(enabled ? FormatItem.SUBTITLE_NONE : mPlayerData.getLastSubtitleFormat());
+            FormatItem format = enabled ? FormatItem.SUBTITLE_NONE : mPlayerData.getLastSubtitleFormat();
+            getPlayer().setFormat(format);
+            mPlayerData.setFormat(format);
             getPlayer().setSubtitleButtonState(!FormatItem.SUBTITLE_NONE.equals(mPlayerData.getLastSubtitleFormat()) && !enabled);
             enableSubtitleForChannel(!enabled);
         } else {
@@ -182,6 +176,7 @@ public class PlayerUIController extends PlayerEventListenerHelper {
                                 FormatItem format = UiOptionItem.toFormat(option);
                                 enableSubtitleForChannel(!format.isDefault());
                                 getPlayer().setFormat(format);
+                                mPlayerData.setFormat(format);
                             },
                             getContext().getString(R.string.subtitles_disabled)));
             settingsPresenter.showDialog();
@@ -198,6 +193,7 @@ public class PlayerUIController extends PlayerEventListenerHelper {
                                 FormatItem format = UiOptionItem.toFormat(option);
                                 enableSubtitleForChannel(!format.isDefault());
                                 getPlayer().setFormat(format);
+                                mPlayerData.setFormat(format);
                             },
                             getContext().getString(R.string.subtitles_disabled)));
             settingsPresenter.showDialog();
@@ -284,7 +280,7 @@ public class PlayerUIController extends PlayerEventListenerHelper {
 
     @Override
     public void onViewPaused() {
-        if (getPlayer().isInPIPMode()) {
+        if (getPlayer() != null && getPlayer().isInPIPMode()) {
             // UI couldn't be properly displayed in PIP mode
             getPlayer().showOverlay(false);
             getPlayer().showDebugInfo(false);
@@ -416,6 +412,10 @@ public class PlayerUIController extends PlayerEventListenerHelper {
 
         Video video = getPlayer().getVideo();
 
+        if (video == null) {
+            return;
+        }
+
         String description = video.description;
 
         if (description == null || description.isEmpty()) {
@@ -487,17 +487,12 @@ public class PlayerUIController extends PlayerEventListenerHelper {
     @Override
     public void onPipClicked() {
         getPlayer().showOverlay(false);
-        getPlayer().setBackgroundMode(
-                Helpers.isPictureInPictureSupported(getContext()) ?
-                        PlayerEngine.BACKGROUND_MODE_PIP : PlayerEngine.BACKGROUND_MODE_SOUND
-        );
+        getPlayer().blockEngine(true);
+        //getPlayer().setBackgroundMode(
+        //        Helpers.isPictureInPictureSupported(getContext()) ?
+        //                PlayerEngine.BACKGROUND_MODE_PIP : PlayerEngine.BACKGROUND_MODE_SOUND
+        //);
         getPlayer().finish();
-    }
-
-    @Override
-    public void onRepeatModeClicked(int modeIndex) {
-        mPlayerData.setRepeatMode(modeIndex);
-        //Utils.showRepeatInfo(getActivity(), modeIndex);
     }
 
     @Override
@@ -514,6 +509,10 @@ public class PlayerUIController extends PlayerEventListenerHelper {
             applySoundOff(buttonState);
         } else if (buttonId == R.id.action_afr) {
             applyAfr(buttonState);
+        } else if (buttonId == R.id.action_repeat) {
+            applyRepeatMode(buttonState);
+        } else if (buttonId == R.id.action_channel) {
+            openChannel();
         }
     }
 
@@ -521,12 +520,14 @@ public class PlayerUIController extends PlayerEventListenerHelper {
     public void onButtonLongClicked(int buttonId, int buttonState) {
         if (buttonId == R.id.action_screen_off || buttonId == R.id.action_screen_off_timeout) {
             showScreenOffDialog();
-        } else if (buttonId == R.id.action_subscribe) {
+        } else if (buttonId == R.id.action_subscribe || buttonId == R.id.action_channel) {
             showNotificationsDialog(buttonState);
         } else if (buttonId == R.id.action_sound_off) {
             showSoundOffDialog();
         } else if (buttonId == R.id.action_afr) {
             AutoFrameRateSettingsPresenter.instance(getContext()).show(() -> applyAfr(mPlayerData.isAfrEnabled() ? PlayerUI.BUTTON_OFF : PlayerUI.BUTTON_ON));
+        } else if (buttonId == R.id.action_repeat) {
+            showRepeatModeDialog(buttonState);
         }
     }
 
@@ -657,8 +658,10 @@ public class PlayerUIController extends PlayerEventListenerHelper {
         return false;
     }
 
-    private boolean handleShortsNavigation(int keyCode) {
-        if (getPlayer().isOverlayShown() || getPlayer().getVideo() == null || !getPlayer().getVideo().isShorts || !mPlayerTweaksData.isQuickShortsSkipEnabled()) {
+    private boolean handleLeftRightSkip(int keyCode) {
+        if (getPlayer().isOverlayShown() || getPlayer().getVideo() == null ||
+                (getPlayer().getVideo().isShorts && !mPlayerTweaksData.isQuickSkipShortsEnabled() ||
+                (!getPlayer().getVideo().isShorts && !mPlayerTweaksData.isQuickSkipVideosEnabled()))) {
             return false;
         }
 
@@ -683,7 +686,7 @@ public class PlayerUIController extends PlayerEventListenerHelper {
         String videoId = getPlayer().getVideo().videoId;
         mPlaylistInfos = null;
         Disposable playlistsInfoAction =
-                YouTubeMotherService.instance().getMediaItemService().getPlaylistsInfoObserve(videoId)
+                YouTubeServiceManager.instance().getMediaItemService().getPlaylistsInfoObserve(videoId)
                         .subscribe(
                                 videoPlaylistInfos -> {
                                     mPlaylistInfos = videoPlaylistInfos;
@@ -805,6 +808,10 @@ public class PlayerUIController extends PlayerEventListenerHelper {
     }
 
     private void onSubscribe(int buttonState) {
+        if (getPlayer().getVideo() == null) {
+            return;
+        }
+
         if (!mIsMetadataLoaded) {
             MessageHelpers.showMessage(getContext(), R.string.wait_data_loading);
             return;
@@ -849,8 +856,33 @@ public class PlayerUIController extends PlayerEventListenerHelper {
         getPlayer().setButtonState(R.id.action_afr, buttonState == PlayerUI.BUTTON_OFF ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
     }
 
+    private void applyRepeatMode(int buttonState) {
+        int nextMode = getNextRepeatMode(buttonState);
+
+        mPlayerData.setRepeatMode(nextMode);
+        getPlayer().setButtonState(R.id.action_repeat, nextMode);
+    }
+
+    private void showRepeatModeDialog(int buttonState) {
+        OptionCategory category = AppDialogUtil.createPlaybackModeCategory(
+                getContext(), mPlayerData, () -> {
+                    getPlayer().setButtonState(R.id.action_repeat, mPlayerData.getRepeatMode());
+                });
+
+        AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
+        settingsPresenter.appendRadioCategory(category.title, category.options);
+        settingsPresenter.showDialog();
+    }
+
+    private int getNextRepeatMode(int buttonState) {
+        int[] modeList = {PlayerEngineConstants.REPEAT_MODE_ALL, PlayerEngineConstants.REPEAT_MODE_ONE, PlayerEngineConstants.REPEAT_MODE_SHUFFLE,
+                PlayerEngineConstants.REPEAT_MODE_LIST, PlayerEngineConstants.REPEAT_MODE_REVERSE_LIST, PlayerEngineConstants.REPEAT_MODE_PAUSE, PlayerEngineConstants.REPEAT_MODE_CLOSE};
+        int nextMode = Helpers.getNextValue(buttonState, modeList);
+        return nextMode;
+    }
+
     private void reorderSubtitles(List<FormatItem> subtitleFormats) {
-        if (subtitleFormats == null || subtitleFormats.isEmpty()) {
+        if (subtitleFormats == null || subtitleFormats.isEmpty() || subtitleFormats.get(0).equals(mPlayerData.getLastSubtitleFormat())) {
             return;
         }
 
@@ -872,12 +904,6 @@ public class PlayerUIController extends PlayerEventListenerHelper {
             return;
         }
 
-        // Can't change notification state while unsubscribed
-        if (buttonState == PlayerUI.BUTTON_OFF) {
-            onSubscribe(buttonState);
-            return;
-        }
-
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
         List<OptionItem> items = new ArrayList<>();
@@ -886,6 +912,8 @@ public class PlayerUIController extends PlayerEventListenerHelper {
             items.add(UiOptionItem.from(item.getTitle(), optionItem -> {
                 if (optionItem.isSelected()) {
                     MediaServiceManager.instance().setNotificationState(item);
+                    getPlayer().getVideo().isSubscribed = true;
+                    getPlayer().setButtonState(R.id.action_subscribe, PlayerUI.BUTTON_ON);
                 }
             }, item.isSelected()));
         }
@@ -921,5 +949,10 @@ public class PlayerUIController extends PlayerEventListenerHelper {
         settingsPresenter.appendCategory(audioVolumeCategory);
         settingsPresenter.appendCategory(pitchEffectCategory);
         settingsPresenter.showDialog(getContext().getString(R.string.player_volume));
+    }
+
+    private void openChannel() {
+        startTempBackgroundMode(ChannelPresenter.class);
+        ChannelPresenter.instance(getContext()).openChannel(getPlayer().getVideo());
     }
 }

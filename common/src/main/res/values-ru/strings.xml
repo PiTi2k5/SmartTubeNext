@@ -48,7 +48,7 @@
     <string name="settings_left_panel">Настроить категории</string>
     <string name="settings_themes">Темы</string>
     <string name="settings_other">Разное</string>
-    <string name="settings_player">Видеоплеер</string>
+    <string name="settings_player">Плеер</string>
     <string name="settings_language">Язык</string>
     <string name="settings_linked_devices">Привязанные устройства</string>
     <string name="settings_about">О приложении</string>
@@ -117,7 +117,7 @@
     <string name="repeat_mode_pause_alt">Воспроизводить непрерывно только видео из плейлиста</string>
     <string name="repeat_mode_none">Завершать воспроизведение после одного видео</string>
     <string name="subscribed_to_channel">Подписка оформлена</string>
-    <string name="unsubscribed_from_channel">Подписка отменена</string>
+    <string name="unsubscribed_from_channel">Подписка не оформлена</string>
     <string name="subtitle_yellow_transparent">Жёлтые на прозрачном фоне</string>
     <string name="subtitle_white_transparent">Белые на прозрачном фоне</string>
     <string name="subtitle_white_black">Белые на чёрном фоне</string>
@@ -242,7 +242,7 @@
     <string name="card_text_scroll_factor">Скорость прокрутки текста карточки</string>
     <string name="preferred_update_source">Выбрать источник обновлений</string>
     <string name="hide_shorts">Скрывать короткие видео из Подписок</string>
-    <string name="hide_shorts_channel">Скрывать короткие видео на Канале</string>
+    <string name="hide_shorts_channel">Скрывать короткие видео на канале</string>
     <string name="key_remapping">Переопределение клавиш</string>
     <string name="screen_dimming">Затемнение экрана</string>
     <string name="removed_from_playback_queue">Удалено из очереди воспроизведения</string>
@@ -482,6 +482,7 @@
     <string name="time_format_12">12 часов (AM/PM)</string>
     <string name="use_alt_speech_recognizer_desc">Серьезно забагован. Используйте его, только если есть проблемы с распознавателем по умолчанию.</string>
     <string name="speech_recognizer">Распознаватель речи</string>
+    <string name="speech_engine">Движок голосового поиска</string>
     <string name="speech_recognizer_system">Системный (наилучший)</string>
     <string name="speech_recognizer_external_1">Внешний 1 (серьезно забагован, для работы нужно отключить доступ к микрофону)</string>
     <string name="speech_recognizer_external_2">Внешний 2 (серьезно забагован)</string>
@@ -549,11 +550,11 @@
     <string name="player_extra_long_speed_list">Очень длинный список скоростей</string>
     <string name="alt_app_icon">Альтернативный значок приложения (требуется перезагрузка)</string>
     <string name="network_stack">Предпочитать сетевой стек %s</string>
-    <string name="player_network_stack">Сетевой стек</string>
+    <string name="player_network_stack">Сетевой движок</string>
     <string name="cronet_desc">Cronet — это сетевой стек Chromium. Обычно быстрее других. Это может помочь с проблемами буферизации.</string>
     <string name="unlock_all_formats">Разблокировать все видео форматы</string>
     <string name="unlock_all_formats_desc">Разблокировать форматы, которые, вероятно, не поддерживаются вашим устройством.</string>
-    <string name="okhttp_desc">Этот сетевой стек является самым медленным, но имеет хорошую стабильность.</string>
+    <string name="okhttp_desc">Этот сетевой движок является самым медленным, но имеет хорошую стабильность.</string>
     <string name="select_channel_section">Открывать соответствующий раздел при запуске приложения с каналов ATV.</string>
     <string name="enable_voice_search_desc">Официальное приложение будет заменено так называемым мостом. Мост помогает передавать глобальные поисковые запросы в наше приложение.</string>
     <string name="enable_master_password">Включить мастер-пароль</string>
@@ -588,7 +589,7 @@
     <string name="subtitle_remember">Запомнить включенные субтитры для каждого канала</string>
     <string name="amazon_frame_drop_fix">Исправление выпадения кадров #2</string>
     <string name="amazon_frame_drop_fix_desc">Исправляет лаги на Amazon Stick и некоторых других устройствах.</string>
-    <string name="default_stack_desc">Встроенный сетевой стек. Этот стек может иметь лучшую стабильность в определенных ситуациях.</string>
+    <string name="default_stack_desc">Встроенный сетевой движок. Этот движок может иметь лучшую стабильность в определенных ситуациях.</string>
     <string name="item_postion">Позиция</string>
     <string name="player_screen_off_dimming">Величина затемнения экрана</string>
     <string name="screensaver_timout">Тайм-аут включения заставки</string>
@@ -602,6 +603,8 @@
     <string name="remember_position_subscriptions">Запоминать последнюю просмотренную позицию в Подписках</string>
     <string name="remember_position_pinned">Запоминать последнюю просмотренную позицию в закрепленных плейлистах</string>
     <string name="msg_player_unknown_error">Неизвестная ошибка</string>
+    <string name="unknown_source_error">Неизвестная ошибка источника</string>
+    <string name="unknown_renderer_error">Неизвестная ошибка рендера</string>
     <string name="header_notifications">Уведомления</string>
     <string name="disable_search_history">Отключить историю поиска</string>
     <string name="unlock_high_bitrate_formats">Разблокировать 1080p vp9 форматы с высоким битрейтом</string>
@@ -615,7 +618,7 @@
     <string name="enter_account_password">Введите пароль от аккаунта</string>
     <string name="show_connect_messages">Сообщения о подключенных устройствах</string>
     <string name="prefer_avc_over_vp9_desc">ПРЕДУПРЕЖДЕНИЕ: 1080p максимум</string>
-    <string name="play_next">Воспроизвезти следующим</string>
+    <string name="play_next">Воспроизвести следующим</string>
     <string name="hide_watched_from_subscriptions">Скрывать просмотренные видео из Подписок</string>
     <string name="hide_watched_from_notifications">Скрывать просмотренные видео из Уведомлений</string>
     <string name="hide_unwanted_content">Скрывать нежелательное содержимое</string>
@@ -630,6 +633,7 @@
     <string name="channel_filter_hint">Фильтровать каналы</string>
     <string name="player_loop_shorts">Зацикливать короткие видео</string>
     <string name="player_quick_shorts_skip">Переключать короткие видео кнопками лево/право</string>
+    <string name="player_quick_skip_videos">Переключать обычные видео кнопками лево/право</string>
     <string name="channels_filter">Показывать поле Фильтровать каналы в разделе Каналы</string>
     <string name="channel_search_bar">Панель поиска на странице канала</string>
     <string name="header_sports">Спорт</string>
@@ -652,4 +656,7 @@
     <string name="long_press_for_options">ДЛИТЕЛЬНОЕ НАЖАТИЕ ДЛЯ ОПЦИЙ</string>
     <string name="device_specific_backup">Резервное копирование только для этого устройства</string>
     <string name="local_backup">Локальное резервное копирование</string>
+    <string name="auto_backup">Автоматическое резервное копирование (раз в день)</string>
+    <string name="repeat_mode_reverse_list">Воспроизвести плейлист или видео с канала в обратном порядке</string>
+    <string name="calm_msg">Мы решаем проблему. Время от времени проверяйте обновления</string>
 </resources>

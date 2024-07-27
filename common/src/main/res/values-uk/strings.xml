@@ -49,7 +49,7 @@
     <string name="settings_left_panel">Налаштувати категорії</string>
     <string name="settings_themes">Теми</string>
     <string name="settings_other">Різне</string>
-    <string name="settings_player">Відеоплеєр</string>
+    <string name="settings_player">Плеєр</string>
     <string name="settings_language">Мова</string>
     <string name="settings_linked_devices">Прив`язані пристрої</string>
     <string name="settings_about">Про застосунок</string>
@@ -242,7 +242,7 @@
     <string name="card_text_scroll_factor">Швидкість прокрутки тексту картки</string>
     <string name="preferred_update_source">Вибрати джерело оновлень</string>
     <string name="hide_shorts">Приховувати короткі відео з Підписок</string>
-    <string name="hide_shorts_channel">Приховувати короткі відео на Каналі</string>
+    <string name="hide_shorts_channel">Приховувати короткі відео на каналі</string>
     <string name="key_remapping">Перевизначення клавіш</string>
     <string name="screen_dimming">Затемнення екрану</string>
     <string name="removed_from_playback_queue">Видалено з черги відтворення</string>
@@ -482,6 +482,7 @@
     <string name="time_format_12">12 годин (AM/PM)</string>
     <string name="use_alt_speech_recognizer_desc">Серйозно забагований. Використовуйте його, лише якщо є проблеми із розпізнавачем за замовчуванням.</string>
     <string name="speech_recognizer">Розпізнавач мови</string>
+    <string name="speech_engine">Рушій голосового пошуку</string>
     <string name="speech_recognizer_system">Системний (найкращій)</string>
     <string name="speech_recognizer_external_1">Зовнішній 1 (серйозно забагований, для роботи потрібно заборонити доступ до мікрофону)</string>
     <string name="speech_recognizer_external_2">Зовнішній 2 (серйозно забагований)</string>
@@ -549,11 +550,11 @@
     <string name="player_extra_long_speed_list">Дуже довгий список швидкостей</string>
     <string name="alt_app_icon">Альтернативна іконка застосунку (потрібне перезавантаження)</string>
     <string name="network_stack">Надавати перевагу мережевому стеку %s</string>
-    <string name="player_network_stack">Мережевий стек</string>
-    <string name="cronet_desc">Cronet — мережевий стек Chromium. Зазвичай швидше за інших. Це може допомогти у проблемах буферизації.</string>
+    <string name="player_network_stack">Мережевий рушій</string>
+    <string name="cronet_desc">Cronet — мережевий рушій Chromium. Зазвичай швидше за інших. Це може допомогти у проблемах буферизації.</string>
     <string name="unlock_all_formats">Розблокувати усі відео формати</string>
     <string name="unlock_all_formats_desc">Розблокувати формати, які, ймовірно, не підтримуються вашим пристроєм.</string>
-    <string name="okhttp_desc">Цей мережевий стек є найповільнішим, але має добру стабільність.</string>
+    <string name="okhttp_desc">Цей мережевий рушій є найповільнішим, але має добру стабільність.</string>
     <string name="select_channel_section">Відкривати відповідний розділ, коли застосунок запущений з каналів ATV</string>
     <string name="enable_voice_search_desc">Офіційний застосунок буде замінений на так званий міст. Міст допомагає передавати запити глобального пошуку в наш застосунок.</string>
     <string name="enable_master_password">Увімкнути головний пароль</string>
@@ -588,7 +589,7 @@
     <string name="subtitle_remember">Запам\'ятати ввімкнені субтитри для кожного каналу</string>
     <string name="amazon_frame_drop_fix">Виправлення випадіння кадрів #2</string>
     <string name="amazon_frame_drop_fix_desc">Виправляє лагання на Amazon Stick та деяких інших пристроях.</string>
-    <string name="default_stack_desc">Вбудований мережевий стек. Цей стек може мати кращу стабільність у певних ситуаціях.</string>
+    <string name="default_stack_desc">Вбудований мережевий рушій. Цей рушій може мати кращу стабільність у певних ситуаціях.</string>
     <string name="item_postion">Позиція</string>
     <string name="player_screen_off_dimming">Величина затемнення екрану</string>
     <string name="screensaver_timout">Тайм-аут увімкнення заставки</string>
@@ -602,6 +603,8 @@
     <string name="remember_position_subscriptions">Запам\'ятовувати останню переглянуту позицію у Підписках</string>
     <string name="remember_position_pinned">Запам\'ятовувати останню переглянуту позицію у закріплених плейлистах</string>
     <string name="msg_player_unknown_error">Невідома помилка</string>
+    <string name="unknown_source_error">Невідома помилка джерела</string>
+    <string name="unknown_renderer_error">Невідома помилка рендера</string>
     <string name="header_notifications">Повідомлення</string>
     <string name="disable_search_history">Вимкнути історію пошуку</string>
     <string name="unlock_high_bitrate_formats">Розблокувати 1080p vp9 формати з високим бітрейтом</string>
@@ -630,6 +633,7 @@
     <string name="channel_filter_hint">Фільтрувати канали</string>
     <string name="player_loop_shorts">Зациклювати короткі відео</string>
     <string name="player_quick_shorts_skip">Перемикати короткі відео кнопками ліво/право</string>
+    <string name="player_quick_skip_videos">Перемикати звичайні відео кнопками ліво/право</string>
     <string name="channels_filter">Показати поле Фільтрувати канали в розділі Канали</string>
     <string name="channel_search_bar">Панель пошуку на сторінці каналу</string>
     <string name="header_sports">Спорт</string>
@@ -652,4 +656,7 @@
     <string name="long_press_for_options">ТРИВАЛЕ НАТИСКАННЯ ДЛЯ ОПЦІЙ</string>
     <string name="device_specific_backup">Резервне копіювання лише для цього пристрою</string>
     <string name="local_backup">Локальне резервне копіювання</string>
+    <string name="auto_backup">Автоматичне резервне копіювання (один раз на день)</string>
+    <string name="repeat_mode_reverse_list">Відтворювати плейлист або відео з каналу у зворотньому порядку</string>
+    <string name="calm_msg">Ми вирішуємо проблему. Час від часу перевіряйте наявність оновлень</string>
 </resources>

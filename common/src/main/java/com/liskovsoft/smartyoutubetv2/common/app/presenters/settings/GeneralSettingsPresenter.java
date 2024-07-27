@@ -9,7 +9,7 @@ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.okhttp.OkHttpManager;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
@@ -301,6 +301,14 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
     private void appendKeyRemappingCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
+        options.add(UiOptionItem.from(getContext().getString(R.string.player_quick_shorts_skip),
+                option -> mPlayerTweaksData.enableQuickSkipShorts(option.isSelected()),
+                mPlayerTweaksData.isQuickSkipShortsEnabled()));
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.player_quick_skip_videos),
+                option -> mPlayerTweaksData.enableQuickSkipVideos(option.isSelected()),
+                mPlayerTweaksData.isQuickSkipVideosEnabled()));
+
         options.add(UiOptionItem.from("Play/Pause -> OK",
                 option -> mGeneralData.remapPlayToOK(option.isSelected()),
                 mGeneralData.isRemapPlayToOKEnabled()));
@@ -348,6 +356,10 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         options.add(UiOptionItem.from("Page Up/Down -> Speed Up/Down",
                 option -> mGeneralData.remapPageUpToSpeed(option.isSelected()),
                 mGeneralData.isRemapPageUpToSpeedEnabled()));
+        
+        options.add(UiOptionItem.from("Page Up/Down -> Speed Down/Up",
+                option -> mGeneralData.remapPageDownToSpeed(option.isSelected()),
+                mGeneralData.isRemapPageDownToSpeedEnabled()));
 
         options.add(UiOptionItem.from("Channel Up/Down -> Volume Up/Down",
                 option -> mGeneralData.remapChannelUpToVolume(option.isSelected()),
@@ -556,12 +568,12 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
                 option -> mGeneralData.enableSelectChannelSection(option.isSelected()),
                 mGeneralData.isSelectChannelSectionEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_show_tooltips) + ": " + getContext().getString(R.string.long_press_for_options),
-                option -> {
-                    mGeneralData.enableFirstUseTooltip(option.isSelected());
-                    mRestartApp = true;
-                },
-                mGeneralData.isFirstUseTooltipEnabled()));
+        //options.add(UiOptionItem.from(getContext().getString(R.string.player_show_tooltips) + ": " + getContext().getString(R.string.long_press_for_options),
+        //        option -> {
+        //            mGeneralData.enableFirstUseTooltip(option.isSelected());
+        //            mRestartApp = true;
+        //        },
+        //        mGeneralData.isFirstUseTooltipEnabled()));
 
         //// Disable long press on buggy controllers.
         //options.add(UiOptionItem.from(getContext().getString(R.string.disable_ok_long_press),
@@ -630,7 +642,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
             mMainUIData.enableTopButton(topButtons);
             tweaksData.enablePlayerButton(playerButtons);
             mMainUIData.enableMenuItem(menuItems);
-            mPlayerData.setRepeatMode(PlayerUI.REPEAT_MODE_LIST);
+            mPlayerData.setRepeatMode(PlayerEngineConstants.REPEAT_MODE_LIST);
             BrowsePresenter.instance(getContext()).enableSection(MediaGroup.TYPE_HISTORY, true);
             BrowsePresenter.instance(getContext()).enableSection(MediaGroup.TYPE_USER_PLAYLISTS, true);
             BrowsePresenter.instance(getContext()).enableSection(MediaGroup.TYPE_SUBSCRIPTIONS, true);
@@ -642,7 +654,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
             mMainUIData.enableMenuItem(MainUIData.MENU_ITEM_DEFAULT);
             BrowsePresenter.instance(getContext()).enableAllSections(true);
             tweaksData.disableSuggestions(false);
-            mPlayerData.setRepeatMode(PlayerUI.REPEAT_MODE_ALL);
+            mPlayerData.setRepeatMode(PlayerEngineConstants.REPEAT_MODE_ALL);
             searchData.disablePopularSearches(false);
         }
     }
@@ -656,7 +668,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         }
 
         settingsPresenter.closeDialog();
-        SimpleEditDialog.show(
+        SimpleEditDialog.showPassword(
                 getContext(),
                 "", newValue -> {
                     mGeneralData.setSettingsPassword(newValue);
@@ -679,7 +691,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         }
 
         settingsPresenter.closeDialog();
-        SimpleEditDialog.show(
+        SimpleEditDialog.showPassword(
                 getContext(),
                 "", newValue -> {
                     mGeneralData.setMasterPassword(newValue);

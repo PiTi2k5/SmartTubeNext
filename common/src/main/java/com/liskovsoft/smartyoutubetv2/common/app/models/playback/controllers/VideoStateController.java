@@ -30,7 +30,6 @@ public class VideoStateController extends PlayerEventListenerHelper {
     private static final long BEGIN_THRESHOLD_MS = 10_000;
     private boolean mIsPlayEnabled;
     private Video mVideo = new Video();
-    private FormatItem mTempVideoFormat;
     private PlayerData mPlayerData;
     private GeneralData mGeneralData;
     private PlayerTweaksData mPlayerTweaksData;
@@ -38,14 +37,7 @@ public class VideoStateController extends PlayerEventListenerHelper {
     private VideoStateService mStateService;
     private boolean mIsPlayBlocked;
     private int mTickleLeft;
-    private boolean mIsBuffering;
     private boolean mIncognito;
-    private final Runnable mStreamEndCheck = () -> {
-        if (getVideo() != null && getVideo().isLiveEnd && mIsBuffering &&
-                getPlayer().getDurationMs() - getPlayer().getPositionMs() < 3 * LIVE_BUFFER_MS) {
-            getMainController().onPlayEnd();
-        }
-    };
 
     @Override
     public void onInit() { // called each time a video opened from the browser
@@ -75,7 +67,7 @@ public class VideoStateController extends PlayerEventListenerHelper {
 
         setPlayEnabled(true); // video just added
 
-        mTempVideoFormat = null;
+        mPlayerData.setTempVideoFormat(null);
 
         enableIncognitoIfNeeded(item);
 
@@ -144,8 +136,6 @@ public class VideoStateController extends PlayerEventListenerHelper {
             setPlayEnabled(getPlayer().getPlayWhenReady());
             saveState();
         }
-
-        Utils.removeCallbacks(mStreamEndCheck);
     }
 
     @Override
@@ -155,7 +145,7 @@ public class VideoStateController extends PlayerEventListenerHelper {
         }
 
         // Sync history every five minutes
-        if (++mTickleLeft > 5) {
+        if (++mTickleLeft > 5 && getPlayer().isPlaying()) {
             mTickleLeft = 0;
             updateHistory();
         }
@@ -185,7 +175,6 @@ public class VideoStateController extends PlayerEventListenerHelper {
 
     @Override
     public void onVideoLoaded(Video item) {
-        mIsBuffering = false;
         // Actual video that match currently loaded one.
         mVideo = item;
 
@@ -208,7 +197,6 @@ public class VideoStateController extends PlayerEventListenerHelper {
 
     @Override
     public void onPlay() {
-        mIsBuffering = false;
         setPlayEnabled(true);
         showHideScreensaver(false);
     }
@@ -222,18 +210,24 @@ public class VideoStateController extends PlayerEventListenerHelper {
 
     @Override
     public void onTrackSelected(FormatItem track) {
-        if (!getPlayer().isInPIPMode()) {
-            if (track.getType() == FormatItem.TYPE_VIDEO) {
-                if (mPlayerData.getFormat(FormatItem.TYPE_VIDEO).isPreset()) {
-                    mTempVideoFormat = track;
-                } else {
-                    mTempVideoFormat = null;
-                    mPlayerData.setFormat(track);
-                }
-            } else {
-                mPlayerData.setFormat(track);
-            }
-        }
+        //if (!getPlayer().isInPIPMode()) {
+        //    if (track.getType() == FormatItem.TYPE_VIDEO) {
+        //        if (mPlayerData.getFormat(FormatItem.TYPE_VIDEO).isPreset()) {
+        //            mTempVideoFormat = track;
+        //        } else {
+        //            mTempVideoFormat = null;
+        //            mPlayerData.setFormat(track);
+        //        }
+        //    } else {
+        //        mPlayerData.setFormat(track);
+        //    }
+        //}
+
+        //if (!getPlayer().isInPIPMode()) {
+        //    if (track.getType() == FormatItem.TYPE_VIDEO) {
+        //        mTempVideoFormat = mPlayerData.getFormat(FormatItem.TYPE_VIDEO).isPreset() ? track : null;
+        //    }
+        //}
     }
 
     @Override
@@ -246,15 +240,11 @@ public class VideoStateController extends PlayerEventListenerHelper {
 
     @Override
     public void onBuffering() {
-        mIsBuffering = true;
-
-        // Live stream starts to buffer after the end
-        showHideScreensaver(true);
-
         // Restore speed on LIVE end or after seek
         restoreSpeed();
 
-        Utils.postDelayed(mStreamEndCheck, 10_000);
+        // Live stream starts to buffer after the end
+        showHideScreensaver(true);
     }
 
     @Override
@@ -387,8 +377,8 @@ public class VideoStateController extends PlayerEventListenerHelper {
     }
 
     private void restoreVideoFormat() {
-        if (mTempVideoFormat != null) {
-            getPlayer().setFormat(mTempVideoFormat);
+        if (mPlayerData.getTempVideoFormat() != null) {
+            getPlayer().setFormat(mPlayerData.getTempVideoFormat());
         } else {
             getPlayer().setFormat(mPlayerData.getFormat(FormatItem.TYPE_VIDEO));
         }
@@ -484,7 +474,7 @@ public class VideoStateController extends PlayerEventListenerHelper {
         Video video = getVideo();
 
         if (video == null || (video.isShorts && mGeneralData.isHideShortsFromHistoryEnabled()) ||
-                mIncognito || !getPlayer().containsMedia() || (video.isRemote && mRemoteControlData.isRemoteHistoryDisabled())) {
+                mIncognito || getPlayer() == null || !getPlayer().containsMedia() || (video.isRemote && mRemoteControlData.isRemoteHistoryDisabled())) {
             return;
         }
 

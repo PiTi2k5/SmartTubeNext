@@ -656,4 +656,13 @@
   <string name="remember_position_pinned">Recordar la última posición vista en las listas de reproducción fijadas</string>
   <string name="long_press_for_settings">PULSACIÓN LARGA PARA AJUSTES</string>
   <string name="device_specific_backup">Copia de seguridad sólo para este dispositivo</string>
+  <string name="speech_engine">Motor de búsqueda por voz</string>
+  <string name="long_press_for_options">PULSACIÓN LARGA PARA OPCIONES</string>
+  <string name="local_backup">Copia de seguridad local</string>
+  <string name="auto_backup">Copia de seguridad automática (una vez al día)</string>
+  <string name="repeat_mode_reverse_list">Reproducir la lista de reproducción o los vídeos del canal en orden inverso</string>
+  <string name="unknown_source_error">Error de fuente desconocida</string>
+  <string name="unknown_renderer_error">Error de renderizado desconocido</string>
+  <string name="skip_shorts">Saltar Cortos</string>
+  <string name="player_quick_skip_videos">Saltar los vídeos normales con los botones izquierda/derecha</string>
 </resources>

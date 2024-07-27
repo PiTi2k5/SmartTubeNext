@@ -5,7 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.KeyEvent;
 import androidx.annotation.Nullable;
-import com.liskovsoft.mediaserviceinterfaces.yt.MotherService;
+import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
 import com.liskovsoft.mediaserviceinterfaces.yt.RemoteControlService;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.Command;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
@@ -14,7 +14,7 @@ import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
@@ -22,7 +22,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase.OnDataC
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
-import com.liskovsoft.youtubeapi.service.YouTubeMotherService;
+import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.disposables.Disposable;
 
 public class RemoteController extends PlayerEventListenerHelper implements OnDataChange {
@@ -41,7 +41,7 @@ public class RemoteController extends PlayerEventListenerHelper implements OnDat
 
     public RemoteController(Context context) {
         // Start receiving a commands as early as possible
-        MotherService service = YouTubeMotherService.instance();
+        ServiceManager service = YouTubeServiceManager.instance();
         mRemoteControlService = service.getRemoteControlService();
         mRemoteControlData = RemoteControlData.instance(context);
         mRemoteControlData.setOnChange(this);
@@ -95,12 +95,12 @@ public class RemoteController extends PlayerEventListenerHelper implements OnDat
     @Override
     public void onPlayEnd() {
         switch (PlayerData.instance(getContext()).getRepeatMode()) {
-            case PlayerUI.REPEAT_MODE_CLOSE:
-            case PlayerUI.REPEAT_MODE_PAUSE:
-            case PlayerUI.REPEAT_MODE_ALL:
+            case PlayerEngineConstants.REPEAT_MODE_CLOSE:
+            case PlayerEngineConstants.REPEAT_MODE_PAUSE:
+            case PlayerEngineConstants.REPEAT_MODE_ALL:
                 postPlay(false);
                 break;
-            case PlayerUI.REPEAT_MODE_ONE:
+            case PlayerEngineConstants.REPEAT_MODE_ONE:
                 postStartPlaying(getPlayer().getVideo(), true);
                 break;
         }
@@ -253,7 +253,8 @@ public class RemoteController extends PlayerEventListenerHelper implements OnDat
             case Command.TYPE_UPDATE_PLAYLIST:
                 if (getPlayer() != null && mConnected) {
                     Video video = getPlayer().getVideo();
-                    if (video != null) {
+                    // Ensure that remote playlist already playing
+                    if (video != null && video.remotePlaylistId != null) {
                         video.remotePlaylistId = command.getPlaylistId();
                         video.playlistParams = null;
                         video.isRemote = true;
@@ -416,9 +417,9 @@ public class RemoteController extends PlayerEventListenerHelper implements OnDat
 
     private void openNewVideo(Video newVideo) {
         if (Video.equals(mVideo, newVideo) && ViewManager.instance(getContext()).isPlayerInForeground()) { // same video already playing
-            mVideo.playlistId = newVideo.playlistId;
-            mVideo.playlistIndex = newVideo.playlistIndex;
-            mVideo.playlistParams = newVideo.playlistParams;
+            //mVideo.playlistId = newVideo.playlistId;
+            //mVideo.playlistIndex = newVideo.playlistIndex;
+            //mVideo.playlistParams = newVideo.playlistParams;
             if (mNewVideoPositionMs > 0) {
                 getPlayer().setPositionMs(mNewVideoPositionMs);
                 mNewVideoPositionMs = 0;

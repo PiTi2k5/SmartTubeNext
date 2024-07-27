@@ -18,6 +18,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelec
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
+import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.StreamReminderService;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
@@ -25,7 +26,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
-import com.liskovsoft.youtubeapi.service.YouTubeMotherService;
+import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ import io.reactivex.disposables.Disposable;
 
 public class SplashPresenter extends BasePresenter<SplashView> {
     private static final String TAG = SplashPresenter.class.getSimpleName();
+    private static final long APP_INIT_DELAY_MS = 10_000;
     @SuppressLint("StaticFieldLeak")
     private static SplashPresenter sInstance;
     private static boolean sRunOnce;
@@ -41,6 +43,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     private final List<IntentProcessor> mIntentChain = new ArrayList<>();
     private Disposable mRefreshCachePeriodicAction;
     private String mBridgePackageName;
+    private final Runnable mRunBackgroundTasks = this::runBackgroundTasks;
 
     private interface IntentProcessor {
         boolean process(Intent intent);
@@ -61,6 +64,9 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     }
 
     public static void unhold() {
+        if (sInstance != null) {
+            Utils.removeCallbacks(sInstance.mRunBackgroundTasks);
+        }
         sInstance = null;
     }
 
@@ -86,8 +92,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         if (!mRunPerInstance) {
             mRunPerInstance = true;
             //clearCache();
-            enableHistoryIfNeeded();
-            Utils.updateChannels(getContext());
+            Utils.postDelayed(mRunBackgroundTasks, APP_INIT_DELAY_MS);
             initIntentChain();
             // Fake service to prevent the app destroying?
             //runRemoteControlFakeTask();
@@ -101,6 +106,13 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             initVideoStateService();
             initStreamReminderService();
         }
+    }
+
+    private void runBackgroundTasks() {
+        YouTubeServiceManager.instance().refreshCacheIfNeeded(); // decrease player first start
+        enableHistoryIfNeeded();
+        Utils.updateChannels(getContext());
+        GDriveBackupWorker.schedule(getContext());
     }
 
     private void showAccountSelectionIfNeeded() {
@@ -153,14 +165,6 @@ public class SplashPresenter extends BasePresenter<SplashView> {
                 ViewManager.instance(getContext()).clearCaches();
             }
         }
-    }
-
-    private void runRefreshCachePeriodicTask() {
-        if (RxHelper.isAnyActionRunning(mRefreshCachePeriodicAction)) {
-            return;
-        }
-
-        mRefreshCachePeriodicAction = RxHelper.startInterval(YouTubeMotherService.instance()::refreshCacheIfNeeded, 30 * 60);
     }
 
     private void enableHistoryIfNeeded() {
@@ -302,7 +306,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             onSuccess.run();
             getView().finishView(); // critical part, fix black screen on app exit
         } else {
-            SimpleEditDialog.show(
+            SimpleEditDialog.showPassword(
                     getContext(),
                     "", newValue -> {
                         if (password.equals(newValue)) {

@@ -32,6 +32,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.provider.Settings.Secure;
+import android.telephony.TelephonyManager;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
@@ -57,8 +59,8 @@ import com.liskovsoft.sharedutils.helpers.PermissionHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerManager;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter;
@@ -77,13 +79,16 @@ import com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlService;
 import com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlWorker;
 import com.liskovsoft.smartyoutubetv2.common.misc.ScreensaverManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HiddenPrefs;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
 
+import java.io.UnsupportedEncodingException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -617,19 +622,19 @@ public class Utils {
 
     public static void showRepeatInfo(Context context, int modeIndex) {
         switch (modeIndex) {
-            case PlayerUI.REPEAT_MODE_ALL:
+            case PlayerEngineConstants.REPEAT_MODE_ALL:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_all);
                 break;
-            case PlayerUI.REPEAT_MODE_ONE:
+            case PlayerEngineConstants.REPEAT_MODE_ONE:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_one);
                 break;
-            case PlayerUI.REPEAT_MODE_PAUSE:
+            case PlayerEngineConstants.REPEAT_MODE_PAUSE:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_pause);
                 break;
-            case PlayerUI.REPEAT_MODE_LIST:
+            case PlayerEngineConstants.REPEAT_MODE_LIST:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_pause_alt);
                 break;
-            case PlayerUI.REPEAT_MODE_CLOSE:
+            case PlayerEngineConstants.REPEAT_MODE_CLOSE:
                 MessageHelpers.showMessage(context, R.string.repeat_mode_none);
                 break;
         }
@@ -963,5 +968,48 @@ public class Utils {
     public static String updateTooltip(Context context, String tooltip) {
         return GeneralData.instance(context).isFirstUseTooltipEnabled() ?
                 String.format("%s (%s)", tooltip, context.getString(R.string.long_press_for_options)) : tooltip;
+    }
+
+    private static String createTransactionID() {
+        return UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
+    }
+
+    /**
+     * https://stackoverflow.com/a/5626208/1279056<br/>
+     * https://stackoverflow.com/a/40237325/1279056
+     */
+    public static String getUniqueId(Context context) {
+        String uniqueId = HiddenPrefs.instance(context).getUniqueId();
+
+        if (uniqueId == null) {
+            UUID uuid = null;
+            @SuppressLint("HardwareIds")
+            final String androidId = Secure.getString(
+                    context.getContentResolver(), Secure.ANDROID_ID);
+            // Use the Android ID unless it's broken, in which case
+            // fallback on deviceId,
+            // unless it's not available, then fallback on a random
+            // number which we store to a prefs file
+            try {
+                if (!"9774d56d682e549c".equals(androidId)) {
+                    uuid = UUID.nameUUIDFromBytes(androidId
+                            .getBytes("utf8"));
+                } else {
+                    @SuppressLint("HardwareIds")
+                    final String deviceId = ((TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE)).getDeviceId();
+                    uuid = deviceId != null ? UUID
+                            .nameUUIDFromBytes(deviceId
+                                    .getBytes("utf8")) : UUID
+                            .randomUUID();
+                }
+            } catch (UnsupportedEncodingException e) {
+                Log.e(TAG, e.getMessage());
+            }
+
+            uniqueId = uuid != null ? uuid.toString() : createTransactionID();
+            HiddenPrefs.instance(context).setUniqueId(uniqueId);
+        }
+
+        return uniqueId;
     }
 }

@@ -28,7 +28,6 @@ public class UpdateChannelsWorker extends Worker {
     private static final String TAG = UpdateChannelsWorker.class.getSimpleName();
     private static final String WORK_NAME = "Update channels";
     private final UpdateChannelsTask mTask;
-    private static long mPreviousRunTimeMS;
 
     public UpdateChannelsWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);

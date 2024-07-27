@@ -403,7 +403,7 @@ public class TrackSelectorManager implements TrackSelectorCallback {
 
         mSelectedTracks[rendererIndex] = track;
 
-        if (mRenderers[rendererIndex] == null || mRenderers[rendererIndex].mediaTracks == null) {
+        if (mRenderers[rendererIndex] == null || mRenderers[rendererIndex].mediaTracks == null || mRenderers[rendererIndex].sortedTracks == null) {
             Log.e(TAG, "Renderer isn't initialized. Waiting for later selection...");
             return;
         }
@@ -494,9 +494,11 @@ public class TrackSelectorManager implements TrackSelectorCallback {
 
         if (originTrack.format != null) { // not auto selection
             MediaTrack prevResult;
+            MediaTrack tmpResult = null;
 
             MediaTrack[][] mediaTracks = filterByLanguage(renderer.mediaTracks, originTrack);
 
+            outerloop:
             for (int groupIndex = 0; groupIndex < mediaTracks.length; groupIndex++) {
                 prevResult = result;
 
@@ -513,7 +515,18 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                         continue;
                     }
 
+                    // Fix muted audio on stream with higher bitrate than the target
+                    if (tmpResult == null) {
+                        tmpResult = mediaTrack;
+                    }
+
                     int bounds = originTrack.inBounds(mediaTrack);
+
+                    // Multiple ru track fix
+                    if (bounds == 0 && MediaTrack.bitrateEquals(originTrack, mediaTrack)) {
+                        result = mediaTrack;
+                        break outerloop;
+                    }
 
                     if (bounds >= 0) {
                         int compare = mediaTrack.compare(result);
@@ -556,6 +569,11 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                         result = prevResult;
                     }
                 }
+            }
+
+            // Fix muted audio on stream with higher bitrate than the target
+            if (result instanceof AudioTrack && result.isEmpty() && tmpResult != null) {
+                result = tmpResult;
             }
         }
 

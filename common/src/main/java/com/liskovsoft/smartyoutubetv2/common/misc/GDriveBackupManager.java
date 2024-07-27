@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class GDriveBackupManager {
@@ -39,6 +40,7 @@ public class GDriveBackupManager {
     private Disposable mBackupAction;
     private Disposable mRestoreAction;
     private final String[] mBackupNames;
+    private boolean mIsBlocking;
 
     private GDriveBackupManager(Context context) {
         mContext = context;
@@ -62,13 +64,32 @@ public class GDriveBackupManager {
         return sInstance;
     }
 
+    public static void unhold() {
+        sInstance = null;
+    }
+
     public void backup() {
+        mIsBlocking = false;
+        backupInt();
+    }
+
+    public void backupBlocking() {
+        mIsBlocking = true;
+        backupInt();
+    }
+
+    private void backupInt() {
         if (!YouTubeSignInService.instance().isSigned()) {
             return;
         }
 
+        if (mIsBlocking && !mSignInService.isSigned()) {
+            return;
+        }
+
         if (RxHelper.isAnyActionRunning(mBackupAction, mRestoreAction)) {
-            MessageHelpers.showMessage(mContext, R.string.wait_data_loading);
+            if (!mIsBlocking)
+                MessageHelpers.showMessage(mContext, R.string.wait_data_loading);
             return;
         }
 
@@ -93,30 +114,40 @@ public class GDriveBackupManager {
     }
 
     private void startBackupConfirm() {
-        AppDialogUtil.showConfirmationDialog(mContext, mContext.getString(R.string.app_backup), this::startBackup);
+        if (!mIsBlocking) {
+            AppDialogUtil.showConfirmationDialog(mContext, mContext.getString(R.string.app_backup), this::startBackup);
+        } else {
+            startBackup();
+        }
     }
 
     private void startBackup() {
-        String backupDir = mBackupDir + getDeviceSuffix();
+        String backupDir = getBackupDir();
         startBackup(backupDir, mDataDir);
     }
 
     private void startBackup(String backupDir, String dataDir) {
         Collection<File> files = FileHelpers.listFileTree(new File(dataDir));
 
-        mBackupAction = Observable.fromIterable(files)
-                .subscribeOn(Schedulers.io())
-                .observeOn(Schedulers.io()) // run subscribe on separate thread
-                .subscribe(file -> {
-                    if (file.isFile()) {
-                        if (checkFileName(file.getName())) {
-                            MessageHelpers.showLongMessage(mContext, mContext.getString(R.string.app_backup) + "\n" + file.getName());
+        Consumer<File> backupConsumer = file -> {
+            if (file.isFile()) {
+                if (checkFileName(file.getName())) {
+                    if (!mIsBlocking) MessageHelpers.showLongMessage(mContext, mContext.getString(R.string.app_backup) + "\n" + file.getName());
 
-                            RxHelper.runBlocking(mDriveService.uploadFile(file, Uri.parse(String.format("%s%s", backupDir,
-                                    file.getAbsolutePath().replace(dataDir, "")))));
-                        }
-                    }
-                }, error -> MessageHelpers.showLongMessage(mContext, error.getMessage()));
+                    RxHelper.runBlocking(mDriveService.uploadFile(file, Uri.parse(String.format("%s%s", backupDir, file.getAbsolutePath().replace(dataDir, "")))));
+                }
+            }
+        };
+
+        if (mIsBlocking) {
+            Observable.fromIterable(files)
+                    .blockingSubscribe(backupConsumer);
+        } else {
+            mBackupAction = Observable.fromIterable(files)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(Schedulers.io()) // run subscribe on separate thread
+                    .subscribe(backupConsumer, error -> MessageHelpers.showLongMessage(mContext, error.getMessage()));
+        }
     }
 
     private void startRestoreConfirm() {
@@ -124,7 +155,7 @@ public class GDriveBackupManager {
     }
 
     private void startRestore() {
-        String backupDir = mBackupDir + getDeviceSuffix();
+        String backupDir = getBackupDir();
         startRestore(backupDir, mDataDir, () -> startRestore(applyAltPackageName(backupDir), mDataDir, null));
     }
 
@@ -175,5 +206,9 @@ public class GDriveBackupManager {
 
     private String getDeviceSuffix() {
         return mGeneralData.isDeviceSpecificBackupEnabled() ? "_" + Build.MODEL.replace(" ", "_") : "";
+    }
+
+    public String getBackupDir() {
+        return mBackupDir + getDeviceSuffix();
     }
 }

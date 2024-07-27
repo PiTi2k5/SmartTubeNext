@@ -36,6 +36,7 @@ public class VideoGroup {
     private BrowseSection mSection;
     private int mPosition = -1;
     private int mAction;
+    public boolean isQueue;
 
     public static VideoGroup from(BrowseSection category) {
         return from(null, category);
@@ -331,5 +332,57 @@ public class VideoGroup {
         }
 
         return result;
+    }
+
+    public void clear() {
+        if (mVideos == null) {
+            return;
+        }
+
+        mVideos.clear();
+    }
+
+    public boolean contains(Video video) {
+        if (mVideos == null) {
+            return false;
+        }
+
+        return mVideos.contains(video);
+    }
+
+    public int getSize() {
+        if (mVideos == null) {
+            return -1;
+        }
+
+        return mVideos.size();
+    }
+
+    public int indexOf(Video video) {
+        if (mVideos == null) {
+            return -1;
+        }
+
+        return mVideos.indexOf(video);
+    }
+
+    public Video get(int idx) {
+        if (mVideos == null) {
+            return null;
+        }
+
+        return mVideos.get(idx);
+    }
+
+    public void remove(Video video) {
+        if (mVideos == null) {
+            return;
+        }
+
+        try {
+            mVideos.remove(video);
+        } catch (UnsupportedOperationException e) { // read only collection
+            e.printStackTrace();
+        }
     }
 }

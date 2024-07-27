@@ -149,11 +149,6 @@ public abstract class PlayerEventListenerHelper implements PlayerEventListener {
     }
 
     @Override
-    public void onRepeatModeClicked(int modeIndex) {
-        // NOP
-    }
-
-    @Override
     public void onSeekEnd() {
         // NOP
     }
@@ -196,11 +191,6 @@ public abstract class PlayerEventListenerHelper implements PlayerEventListener {
 
     @Override
     public void onLikeClicked(boolean like) {
-        // NOP
-    }
-
-    @Override
-    public void onChannelClicked() {
         // NOP
     }
 

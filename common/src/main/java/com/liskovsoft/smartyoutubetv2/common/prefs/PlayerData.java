@@ -23,12 +23,9 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListene
 import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class PlayerData extends DataChangeBase implements PlayerEngineConstants, ProfileChangeListener {
     private static final String VIDEO_PLAYER_DATA = "video_player_data";
@@ -51,6 +48,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     private boolean mIsRemainingTimeEnabled;
     private int mBackgroundMode;
     private FormatItem mVideoFormat;
+    private FormatItem mTempVideoFormat;
     private FormatItem mAudioFormat;
     private FormatItem mSubtitleFormat;
     private int mVideoBufferType;
@@ -376,7 +374,8 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     }
 
     public void setFormat(FormatItem format) {
-        if (format == null || Helpers.equalsAny(format, mVideoFormat, mAudioFormat, mSubtitleFormat)) {
+        //if (format == null || Helpers.equalsAny(format, mVideoFormat, mAudioFormat, mSubtitleFormat)) {
+        if (format == null) {
             return;
         }
 
@@ -394,6 +393,14 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         }
         
         persistState();
+    }
+
+    public void setTempVideoFormat(FormatItem format) {
+        mTempVideoFormat = format;
+    }
+
+    public FormatItem getTempVideoFormat() {
+        return mTempVideoFormat;
     }
 
     public FormatItem getLastSubtitleFormat() {
@@ -685,6 +692,10 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         return formatItem != null ? formatItem : FormatItem.VIDEO_HD_AVC_30;
     }
 
+    public FormatItem getDefaultSubtitleFormat() {
+        return FormatItem.SUBTITLE_NONE;
+    }
+
     public int getStartSeekIncrementMs() {
         return mStartSeekIncrementMs;
     }
@@ -742,7 +753,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         // afrData was there
         mVideoFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 9)), getDefaultVideoFormat());
         mAudioFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 10)), getDefaultAudioFormat());
-        mSubtitleFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 11)), FormatItem.SUBTITLE_NONE);
+        mSubtitleFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 11)), getDefaultSubtitleFormat());
         mVideoBufferType = Helpers.parseInt(split, 12, PlayerEngine.BUFFER_LOW);
         mSubtitleStyleIndex = Helpers.parseInt(split, 13, 4); // yellow on semi bg
         mVideoZoomMode = Helpers.parseInt(split, 14, PlayerEngine.ZOOM_MODE_DEFAULT);
@@ -781,7 +792,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mLastSpeed = Helpers.parseFloat(split, 48, 1.0f);
         mVideoRotation = Helpers.parseInt(split, 49, 0);
         mVideoZoom = Helpers.parseInt(split, 50, -1);
-        mRepeatMode = Helpers.parseInt(split, 51, PlayerUI.REPEAT_MODE_ALL);
+        mRepeatMode = Helpers.parseInt(split, 51, PlayerEngineConstants.REPEAT_MODE_ALL);
         mAudioLanguage = Helpers.parseStr(split, 52, LocaleUtility.getCurrentLanguage(mPrefs.getContext()));
         mSubtitleLanguage = Helpers.parseStr(split, 53, LocaleUtility.getCurrentLanguage(mPrefs.getContext()));
         //String enabledSubtitles = Helpers.parseStr(split, 54);
