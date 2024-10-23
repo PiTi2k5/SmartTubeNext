@@ -36,6 +36,7 @@ import java.util.TreeSet;
 
 public class TrackSelectorManager implements TrackSelectorCallback {
     private final Context mContext;
+    public static final int RENDERER_INDEX_UNKNOWN = -1;
     public static final int RENDERER_INDEX_VIDEO = 0;
     public static final int RENDERER_INDEX_AUDIO = 1;
     public static final int RENDERER_INDEX_SUBTITLE = 2;
@@ -522,7 +523,7 @@ public class TrackSelectorManager implements TrackSelectorCallback {
 
                     int bounds = originTrack.inBounds(mediaTrack);
 
-                    // Multiple ru track fix
+                    // Multiple ru track fix (same id!) Example: https://www.youtube.com/watch?v=l3htINlc2ic
                     if (bounds == 0 && MediaTrack.bitrateEquals(originTrack, mediaTrack)) {
                         result = mediaTrack;
                         break outerloop;
@@ -541,7 +542,7 @@ public class TrackSelectorManager implements TrackSelectorCallback {
                         //    }
                         //}
 
-                        if (compare == 0) {
+                        if (compare == 0 && MediaTrack.preferByDrc(originTrack, result, mediaTrack)) {
                             if (MediaTrack.codecEquals(mediaTrack, originTrack)) {
                                 result = mediaTrack;
                             } else if (!MediaTrack.codecEquals(result, originTrack) &&
@@ -645,7 +646,15 @@ public class TrackSelectorManager implements TrackSelectorCallback {
         // Tracks are grouped by the language/formats
         for (MediaTrack[] trackGroup : trackGroupList) {
             if (trackGroup != null && trackGroup.length >= 1) {
-                MediaTrack mediaTrack = trackGroup[0];
+                MediaTrack mediaTrack = null;
+
+                // All tracks in the group have same language. Pick up first non empty.
+                for (MediaTrack track : trackGroup) {
+                    if (track != null) {
+                        mediaTrack = track;
+                        break;
+                    }
+                }
 
                 if (mediaTrack != null && mediaTrack.format != null) {
                     if (Helpers.startsWith(mediaTrack.format.language, resultLanguage)) { // format language: en-us

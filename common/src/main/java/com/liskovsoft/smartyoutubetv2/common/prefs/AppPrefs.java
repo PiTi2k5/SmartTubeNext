@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
 import com.liskovsoft.sharedutils.prefs.SharedPreferencesBase;
 import com.liskovsoft.smartyoutubetv2.common.R;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.service.SidebarService;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.AccountChangeListener;
 
@@ -21,6 +22,8 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
     private static final String ANONYMOUS_PROFILE_NAME = "anonymous";
     private static final String MULTI_PROFILES = "multi_profiles";
     private static final String STATE_UPDATER_DATA = "state_updater_data";
+    private static final String CHANNEL_GROUP_DATA = "channel_group_data";
+    private static final String SIDEBAR_DATA = "sidebar_data";
     private static final String VIEW_MANAGER_DATA = "view_manager_data";
     private static final String WEB_PROXY_URI = "web_proxy_uri";
     private static final String WEB_PROXY_ENABLED = "web_proxy_enabled";
@@ -45,9 +48,11 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
 
     @Override
     public void onAccountChanged(Account account) {
-        if (isMultiProfilesEnabled()) {
-            selectAccount(account);
-        }
+        //if (isMultiProfilesEnabled()) {
+        //    selectAccount(account);
+        //}
+
+        selectAccount(account);
     }
 
     public static AppPrefs instance(Context context) {
@@ -59,8 +64,13 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
     }
 
     public void enableMultiProfiles(boolean enabled) {
+        if (isMultiProfilesEnabled() == enabled) {
+            return;
+        }
+
         putBoolean(MULTI_PROFILES, enabled);
-        selectAccount(enabled ? MediaServiceManager.instance().getSelectedAccount() : null);
+        onProfileChanged();
+        //selectAccount(enabled ? MediaServiceManager.instance().getSelectedAccount() : null);
     }
 
     public boolean isMultiProfilesEnabled() {
@@ -75,31 +85,47 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
         return mBootResolution;
     }
 
-    //public String getStateUpdaterData() {
-    //    return getString(STATE_UPDATER_DATA, null);
-    //}
-    //
-    //public void setStateUpdaterData(String data) {
-    //    putString(STATE_UPDATER_DATA, data);
-    //}
-
     public String getStateUpdaterData() {
-        return getProfileData(STATE_UPDATER_DATA);
+        // Always use multiple profiles for the history
+        return getData(getProfileKey(STATE_UPDATER_DATA, true));
     }
 
     public void setStateUpdaterData(String data) {
-        setProfileData(STATE_UPDATER_DATA, data);
+        // Always use multiple profiles for the history
+        setData(getProfileKey(STATE_UPDATER_DATA, true), data);
+    }
+
+    public String getChannelGroupData() {
+        // Always use multiple profiles
+        return getData(getProfileKey(CHANNEL_GROUP_DATA, true));
+    }
+
+    public void setChannelGroupData(String data) {
+        // Always use multiple profiles
+        setData(getProfileKey(CHANNEL_GROUP_DATA, true), data);
+    }
+
+    public String getSidebarData() {
+        // Always use multiple profiles
+        return getData(getProfileKey(SIDEBAR_DATA, true));
+    }
+
+    public void setSidebarData(String data) {
+        // Always use multiple profiles
+        setData(getProfileKey(SIDEBAR_DATA, true), data);
     }
 
     public void setProfileData(String key, String data) {
-        setData(getProfileKey(key), data);
+        setData(getProfileKey(key, isMultiProfilesEnabled()), data);
     }
 
     public String getProfileData(String key) {
-        String data = getData(getProfileKey(key));
+        //String data = getData(getProfileKey(key, isMultiProfilesEnabled()));
 
         // Fallback to non-profile settings
-        return data != null ? data : getData(key);
+        //return data != null ? data : getData(key);
+
+        return getData(getProfileKey(key, isMultiProfilesEnabled()));
     }
 
     public void setData(String key, String data) {
@@ -142,7 +168,11 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
     }
 
     private void selectProfile(String profileName) {
-        if (isMultiProfilesEnabled() && profileName == null) {
+        //if (isMultiProfilesEnabled() && profileName == null) {
+        //    profileName = ANONYMOUS_PROFILE_NAME;
+        //}
+
+        if (profileName == null) {
             profileName = ANONYMOUS_PROFILE_NAME;
         }
 
@@ -161,6 +191,8 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
         if (!mListeners.contains(listener)) {
             if (listener instanceof GeneralData) {
                 mListeners.add(0, listener); // data classes should be called before regular listeners
+            } else if (listener instanceof SidebarService) {
+                mListeners.add(mListeners.isEmpty() ? 0 : 1, listener); // data classes should be called before regular listeners
             } else {
                 mListeners.add(listener);
             }
@@ -187,9 +219,18 @@ public class AppPrefs extends SharedPreferencesBase implements AccountChangeList
         return true;
     }
 
-    private String getProfileKey(String key) {
+    //private String getProfileKey(String key) {
+    //    String profileName = getProfileName();
+    //    if (!TextUtils.isEmpty(profileName)) {
+    //        key = profileName + "_" + key;
+    //    }
+    //
+    //    return key;
+    //}
+
+    private String getProfileKey(String key, boolean isMultiProfilesEnabled) {
         String profileName = getProfileName();
-        if (!TextUtils.isEmpty(profileName)) {
+        if (!TextUtils.isEmpty(profileName) && isMultiProfilesEnabled) {
             key = profileName + "_" + key;
         }
 

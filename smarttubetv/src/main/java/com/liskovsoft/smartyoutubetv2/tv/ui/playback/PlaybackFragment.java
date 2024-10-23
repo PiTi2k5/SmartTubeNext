@@ -13,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
@@ -45,15 +46,10 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.listener.PlayerEventListener;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngine;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerManager;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.ChatReceiver;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.SeekBarSegment;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.controller.ExoPlayerController;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.controller.PlayerController;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.DebugInfoManager;
@@ -83,6 +79,7 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.playback.previewtimebar.StoryboardSe
 import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.chat.LiveChatView;
 import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.time.DateTimeView;
 import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.time.EndingTimeView;
+import com.liskovsoft.youtubeapi.common.helpers.YouTubeHelper;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -94,8 +91,9 @@ import java.util.Map;
  * {@link VideoPlayerGlue}.
  */
 @RequiresApi(19)
-public class PlaybackFragment extends SeekModePlaybackFragment implements PlaybackView, PlayerManager {
+public class PlaybackFragment extends SeekModePlaybackFragment implements PlaybackView {
     private static final String TAG = PlaybackFragment.class.getSimpleName();
+    private static final String SELECTED_VIDEO_ID = "SelectedVideoId";
     private static final int UPDATE_DELAY_MS = 100;
     private static final int SUGGESTIONS_START_INDEX = 1;
     private VideoPlayerGlue mPlayerGlue;
@@ -106,7 +104,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     private VideoCardPresenter mCardPresenter;
     private ShortsCardPresenter mShortsPresenter;
     private Map<Integer, VideoGroupObjectAdapter> mMediaGroupAdapters;
-    private PlayerEventListener mEventListener;
     private PlayerController mExoPlayerController;
     private ExoPlayerInitializer mPlayerInitializer;
     private SubtitleManager mSubtitleManager;
@@ -114,25 +111,27 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     private UriBackgroundManager mBackgroundManager;
     private RowsSupportFragment mRowsSupportFragment;
     private boolean mIsUIAnimationsEnabled = false;
-    //private int mPlaybackMode = PlayerEngine.BACKGROUND_MODE_DEFAULT;
     private boolean mIsEngineBlocked;
     private MediaSessionCompat mMediaSession;
     private MediaSessionConnector mMediaSessionConnector;
     private Boolean mIsControlsShownPreviously;
     private Video mPendingFocus;
+    private long mProgressShowTimeMs;
+    private String mSelectedVideoId;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(null); // trying to fix bug with presets
 
+        mSelectedVideoId = savedInstanceState != null ? savedInstanceState.getString(SELECTED_VIDEO_ID, null) : null;
         mMediaGroupAdapters = new HashMap<>();
         mBackgroundManager = getLeanbackActivity().getBackgroundManager();
         mBackgroundManager.setBackgroundColor(ContextCompat.getColor(getContext(), R.color.player_background));
         mPlayerInitializer = new ExoPlayerInitializer(getContext());
-        mExoPlayerController = new ExoPlayerController(getContext());
 
         mPlaybackPresenter = PlaybackPresenter.instance(getContext());
         mPlaybackPresenter.setView(this);
+        mExoPlayerController = new ExoPlayerController(getContext(), mPlaybackPresenter);
 
         initPresenters();
         setupEventListeners();
@@ -143,6 +142,10 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         super.onActivityCreated(savedInstanceState);
 
         mPlaybackPresenter.onViewInitialized();
+
+        if (mSelectedVideoId != null) {
+            mPlaybackPresenter.openVideo(mSelectedVideoId);
+        }
     }
 
     @Override
@@ -154,6 +157,14 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         ProgressBarManager.setup(getProgressBarManager(), (ViewGroup) root);
 
         return root;
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        // Store position in case activity is crashed
+        outState.putString(SELECTED_VIDEO_ID, getVideo() != null ? getVideo().videoId : null);
     }
 
     /**
@@ -204,7 +215,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         }
 
         // NOTE: don't move this into another place! Multiple components rely on it.
-        mEventListener.onViewResumed();
+        mPlaybackPresenter.onViewResumed();
 
         showHideWidgets(true); // PIP mode fix
         blockEngine(false); // reset bg mode
@@ -215,7 +226,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         super.onPause();
 
         // NOTE: don't move this into another place! Multiple components rely on it.
-        mEventListener.onViewPaused();
+        mPlaybackPresenter.onViewPaused();
 
         if (Util.SDK_INT <= 23) {
             maybeReleasePlayer();
@@ -245,7 +256,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             tickle(); // show Player UI
         }
 
-        mEventListener.onKeyDown(-1); // reset ui timer
+        mPlaybackPresenter.onKeyDown(-1); // reset ui timer
     }
 
     public void onFinish() {
@@ -266,7 +277,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             maybeReleasePlayer();
         }
 
-        mEventListener.onFinish();
+        mPlaybackPresenter.onFinish();
     }
 
     public void onPIPChanged(boolean isInPIP) {
@@ -324,14 +335,16 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         }
 
         releasePlayer();
+        // Improve memory usage??? Player may hangs on a second after close
+        Runtime.getRuntime().gc();
         initializePlayer();
     }
 
     @Override
     public void reloadPlayback() {
         if (mPlayer != null) {
-            mEventListener.onEngineReleased();
-            mEventListener.onEngineInitialized();
+            mPlaybackPresenter.onEngineReleased();
+            mPlaybackPresenter.onEngineInitialized();
         }
     }
 
@@ -371,8 +384,10 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     private void releasePlayer() {
         if (mPlayer != null) {
             Log.d(TAG, "releasePlayer: Start releasing player engine...");
-            mEventListener.onEngineReleased();
+            mPlaybackPresenter.onEngineReleased();
             destroyPlayerObjects();
+            // Improve memory usage??? Player may hangs on a second after close
+            //Runtime.getRuntime().gc();
         }
     }
 
@@ -384,7 +399,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
         createPlayerObjects();
 
-        mEventListener.onEngineInitialized();
+        mPlaybackPresenter.onEngineInitialized();
     }
 
     private void destroyPlayerObjects() {
@@ -395,6 +410,9 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         }
         if (mMediaSession != null) {
             mMediaSession.release();
+        }
+        if (mRowsAdapter != null) {
+            mRowsAdapter.clear();
         }
         setAdapter(null); // PlayerGlue->LeanbackPlayerAdapter->Context memory leak fix
         mPlayer = null;
@@ -429,7 +447,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     private void createPlayer() {
-        mExoPlayerController.setEventListener(mEventListener);
+        //mExoPlayerController.setEventListener(mPlaybackPresenter);
 
         // Use default or pass your bandwidthMeter here: bandwidthMeter = new DefaultBandwidthMeter.Builder(getContext()).build()
         DefaultTrackSelector trackSelector = new RestoreTrackSelector(new AdaptiveTrackSelection.Factory());
@@ -541,12 +559,12 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
             @Override
             public void onSkipToPrevious(Player player, ControlDispatcher controlDispatcher) {
-                mEventListener.onPreviousClicked();
+                mPlaybackPresenter.onPreviousClicked();
             }
 
             @Override
             public void onSkipToNext(Player player, ControlDispatcher controlDispatcher) {
-                mEventListener.onNextClicked();
+                mPlaybackPresenter.onNextClicked();
             }
         });
 
@@ -636,7 +654,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
                 Object item) {
 
             if (item instanceof Video) {
-                mEventListener.onSuggestionItemLongClicked((Video) item);
+                mPlaybackPresenter.onSuggestionItemLongClicked((Video) item);
             }
         }
     }
@@ -650,7 +668,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
                 Row row) {
 
             if (item instanceof Video) {
-                mEventListener.onSuggestionItemClicked((Video) item);
+                mPlaybackPresenter.onSuggestionItemClicked((Video) item);
             }
         }
     }
@@ -673,7 +691,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
                 if (index != -1) {
                     int size = adapter.size();
                     if (index > (size - 4)) {
-                        mEventListener.onScrollEnd(item);
+                        mPlaybackPresenter.onScrollEnd(item);
                     }
                     break;
                 }
@@ -684,122 +702,112 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     private class PlayerActionListener implements VideoPlayerGlue.OnActionClickedListener {
         @Override
         public void onPrevious() {
-            mEventListener.onPreviousClicked();
+            mPlaybackPresenter.onPreviousClicked();
         }
 
         @Override
         public void onNext() {
-            mEventListener.onNextClicked();
+            mPlaybackPresenter.onNextClicked();
         }
 
         @Override
         public void onPlay() {
-            mEventListener.onPlayClicked();
+            mPlaybackPresenter.onPlayClicked();
         }
 
         @Override
         public void onPause() {
-            mEventListener.onPauseClicked();
+            mPlaybackPresenter.onPauseClicked();
         }
 
         @Override
         public void onHighQuality() {
-            mEventListener.onHighQualityClicked();
+            mPlaybackPresenter.onHighQualityClicked();
         }
 
         @Override
         public void onThumbsDown(boolean thumbsDown) {
-            mEventListener.onDislikeClicked(thumbsDown);
+            mPlaybackPresenter.onDislikeClicked(thumbsDown);
         }
 
         @Override
         public void onThumbsUp(boolean thumbsUp) {
-            mEventListener.onLikeClicked(thumbsUp);
+            mPlaybackPresenter.onLikeClicked(thumbsUp);
         }
 
         @Override
         public void onClosedCaptions(boolean enabled) {
-            mEventListener.onSubtitleClicked(enabled);
+            mPlaybackPresenter.onSubtitleClicked(enabled);
         }
 
         @Override
         public void onClosedCaptionsLongPress(boolean enabled) {
-            mEventListener.onSubtitleLongClicked(enabled);
+            mPlaybackPresenter.onSubtitleLongClicked(enabled);
         }
 
         @Override
         public void onPlaylistAdd() {
-            mEventListener.onPlaylistAddClicked();
+            mPlaybackPresenter.onPlaylistAddClicked();
         }
 
         @Override
         public void onDebugInfo(boolean enabled) {
-            mEventListener.onDebugInfoClicked(enabled);
+            mPlaybackPresenter.onDebugInfoClicked(enabled);
         }
 
         @Override
         public void onVideoSpeed(boolean enabled) {
-            mEventListener.onSpeedClicked(enabled);
+            mPlaybackPresenter.onSpeedClicked(enabled);
         }
 
         @Override
         public void onVideoSpeedLongPress(boolean enabled) {
-            mEventListener.onSpeedLongClicked(enabled);
+            mPlaybackPresenter.onSpeedLongClicked(enabled);
         }
 
         @Override
         public void onSeekInterval() {
-            mEventListener.onSeekIntervalClicked();
-        }
-
-        @Override
-        public void onChat(boolean enabled) {
-            mEventListener.onChatClicked(enabled);
-        }
-
-        @Override
-        public void onChatLongPress(boolean enabled) {
-            mEventListener.onChatLongClicked(enabled);
+            mPlaybackPresenter.onSeekIntervalClicked();
         }
 
         @Override
         public void onVideoInfo() {
-            mEventListener.onVideoInfoClicked();
+            mPlaybackPresenter.onVideoInfoClicked();
         }
 
         @Override
         public void onShareLink() {
-            mEventListener.onShareLinkClicked();
+            mPlaybackPresenter.onShareLinkClicked();
         }
 
         @Override
         public void onSearch() {
-            mEventListener.onSearchClicked();
+            mPlaybackPresenter.onSearchClicked();
         }
 
         @Override
         public void onVideoZoom() {
-            mEventListener.onVideoZoomClicked();
+            mPlaybackPresenter.onVideoZoomClicked();
         }
 
         @Override
         public void onPip() {
-            mEventListener.onPipClicked();
+            mPlaybackPresenter.onPipClicked();
         }
 
         @Override
         public void onPlaybackQueue() {
-            mEventListener.onPlaybackQueueClicked();
+            mPlaybackPresenter.onPlaybackQueueClicked();
         }
 
         @Override
         public void onAction(int actionId, int actionIndex) {
-            mEventListener.onButtonClicked(actionId, actionIndex);
+            mPlaybackPresenter.onButtonClicked(actionId, actionIndex);
         }
 
         @Override
         public void onLongAction(int actionId, int actionIndex) {
-            mEventListener.onButtonLongClicked(actionId, actionIndex);
+            mPlaybackPresenter.onButtonLongClicked(actionId, actionIndex);
         }
 
         @Override
@@ -809,7 +817,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
         @Override
         public boolean onKeyDown(int keyCode) {
-            return mEventListener.onKeyDown(keyCode);
+            return mPlaybackPresenter.onKeyDown(keyCode);
         }
     }
 
@@ -859,6 +867,16 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         return result;
     }
 
+    private CharSequence createNextTitle(Video video) {
+        CharSequence result = null;
+
+        if (video != null) {
+            result = YouTubeHelper.createInfo(video.getTitle(), video.getAuthor());
+        }
+
+        return result;
+    }
+
     @Override
     public void loadStoryboard() {
         if (mPlayerGlue.getSeekProvider() instanceof StoryboardSeekDataProvider) {
@@ -879,9 +897,20 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
         if (show) {
             getProgressBarManager().show();
+            mProgressShowTimeMs = System.currentTimeMillis();
         } else {
             getProgressBarManager().hide();
         }
+    }
+
+    @Override
+    protected void onBufferingStateChanged(boolean start) {
+        // Fix progress stop when playing videos non-stop (stop buffer event from previous video called)
+        if (!start && System.currentTimeMillis() - mProgressShowTimeMs < 100) {
+            return;
+        }
+
+        super.onBufferingStateChanged(start);
     }
 
     @Override
@@ -1113,25 +1142,9 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     // End Engine Events
 
     @Override
-    public void setEventListener(PlayerEventListener listener) {
-        mEventListener = listener;
-        mExoPlayerController.setEventListener(listener);
-    }
-
-    @Override
-    public PlayerEventListener getEventListener() {
-        return mEventListener;
-    }
-
-    @Override
-    public PlayerManager getPlayer() {
-        return this;
-    }
-
-    @Override
     public void onDestroyView() {
         super.onDestroyView();
-        mEventListener.onViewDestroyed();
+        //mPlaybackPresenter.onViewDestroyed();
     }
 
     @Override
@@ -1205,8 +1218,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             mPlayerGlue.setControlsVisibility(true);
         }
 
-        if (mEventListener != null) {
-            mEventListener.onControlsShown(true);
+        if (mPlaybackPresenter != null) {
+            mPlaybackPresenter.onControlsShown(true);
         }
 
         mIsControlsShownPreviously = true;
@@ -1225,8 +1238,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             mPlayerGlue.setControlsVisibility(false);
         }
 
-        if (mEventListener != null) {
-            mEventListener.onControlsShown(false);
+        if (mPlaybackPresenter != null) {
+            mPlaybackPresenter.onControlsShown(false);
         }
 
         mIsControlsShownPreviously = false;
@@ -1311,13 +1324,6 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     @Override
-    public void setChatButtonState(boolean selected) {
-        if (mPlayerGlue != null) {
-            mPlayerGlue.setChatButtonState(selected);
-        }
-    }
-
-    @Override
     public void setButtonState(int buttonId, int buttonState) {
         if (mPlayerGlue != null) {
             mPlayerGlue.setButtonState(buttonId, buttonState);
@@ -1340,9 +1346,9 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     @Override
-    public void setNextTitle(String title) {
+    public void setNextTitle(Video nextVideo) {
         if (mPlayerGlue != null) {
-            mPlayerGlue.setNextTitle(title);
+            mPlayerGlue.setNextTitle(createNextTitle(nextVideo));
         }
     }
 

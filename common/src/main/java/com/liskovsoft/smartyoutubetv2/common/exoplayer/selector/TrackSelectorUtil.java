@@ -54,8 +54,8 @@ public class TrackSelectorUtil {
             trackName = joinWithSeparator(joinWithSeparator(joinWithSeparator(joinWithSeparator(joinWithSeparator(buildResolutionShortString(format),
                     buildFPSString(format)), buildBitrateString(format)), extractCodec(format)), buildHDRString(format)), buildHighBitrateMark(format));
         } else if (MimeTypes.isAudio(format.sampleMimeType)) {
-            trackName = joinWithSeparator(joinWithSeparator(joinWithSeparator(joinWithSeparator(buildLanguageString(format),
-                    buildAudioPropertyString(format)), buildBitrateString(format)), extractCodec(format)), buildChannels(format));
+            trackName = joinWithSeparator(joinWithSeparator(joinWithSeparator(joinWithSeparator(joinWithSeparator(buildLanguageString(format),
+                    buildAudioPropertyString(format)), buildBitrateString(format)), extractCodec(format)), buildChannels(format)), buildDrcMark(format));
         } else if (MimeTypes.isText(format.sampleMimeType)) {
             trackName = buildLanguageString(format);
         } else {
@@ -68,12 +68,12 @@ public class TrackSelectorUtil {
      * Add high bitrate (Premium) mark
      */
     public static String buildHighBitrateMark(Format format) {
-        if (format == null) {
-            return "";
-        }
-
         // Unicode chars: https://symbl.cc/en/search/?q=mark
-        return format.containerMimeType == null ? HIGH_BITRATE_MARK : "";
+        return isHighBitrateFormat(format) ? HIGH_BITRATE_MARK : "";
+    }
+
+    public static boolean isHighBitrateFormat(Format format) {
+        return format != null && format.containerMimeType == null && format.height >= 1080;
     }
 
     public static String buildHDRString(Format format) {
@@ -126,7 +126,7 @@ public class TrackSelectorUtil {
             return false;
         }
 
-        return codec.equals(CODEC_PREFIX_VP9_HDR) || Helpers.endsWith(codec, CODEC_SUFFIX_AV1_HDR, CODEC_SUFFIX_AV1_HDR2, HDR_PROFILE_ENDING);
+        return codec.equals(CODEC_PREFIX_VP9_HDR) || Helpers.endsWithAny(codec, CODEC_SUFFIX_AV1_HDR, CODEC_SUFFIX_AV1_HDR2, HDR_PROFILE_ENDING);
     }
 
     public static String extractCodec(Format format) {
@@ -177,6 +177,14 @@ public class TrackSelectorUtil {
 
     public static String buildChannels(Format format) {
         return is51Audio(format) ? "5.1" : "";
+    }
+
+    public static String buildDrcMark(Format format) {
+        return isDrc(format) ? "DRC" : "";
+    }
+
+    public static boolean isDrc(Format format) {
+        return format != null && Helpers.endsWithAny(format.id, "drc");
     }
 
     public static boolean is51Audio(Format format) {

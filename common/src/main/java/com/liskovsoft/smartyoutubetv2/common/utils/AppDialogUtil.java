@@ -24,8 +24,11 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter.VideoMenuCallback;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.SubtitleManager.SubtitleStyle;
+import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.ExoFormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem.VideoPreset;
+import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.TrackSelectorManager;
+import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.track.MediaTrack;
 import com.liskovsoft.smartyoutubetv2.common.misc.AppDataSourceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.ContentBlockData;
@@ -61,6 +64,7 @@ public class AppDialogUtil {
     private static final int PITCH_EFFECT_ID = 144;
     private static final int AUDIO_VOLUME_ID = 145;
     private static final int PLAYER_REPEAT_ID = 146;
+    private static final int PLAYER_ENGINE_ID = 147;
     private static final int SUBTITLE_STYLES_ID = 45;
     private static final int SUBTITLE_SIZE_ID = 46;
     private static final int SUBTITLE_POSITION_ID = 47;
@@ -273,6 +277,13 @@ public class AppDialogUtil {
                     isPresetSelection && preset.format.equals(selectedFormat)));
         }
 
+        FormatItem noVideo = ExoFormatItem.from(MediaTrack.forRendererIndex(TrackSelectorManager.RENDERER_INDEX_VIDEO), true);
+        result.add(0, UiOptionItem.from(
+                context.getString(R.string.video_disabled),
+                optionItem ->
+                        setFormat(noVideo, playerData, onFormatSelected),
+                isPresetSelection && Helpers.equals(noVideo, selectedFormat)));
+
         result.add(0, UiOptionItem.from(
                 context.getString(R.string.video_preset_disabled),
                 optionItem -> setFormat(playerData.getDefaultVideoFormat(), playerData, onFormatSelected),
@@ -296,10 +307,10 @@ public class AppDialogUtil {
     public static OptionCategory createVideoBufferCategory(Context context, PlayerData playerData, Runnable onBufferSelected) {
         String videoBufferTitle = context.getString(R.string.video_buffer);
         List<OptionItem> optionItems = new ArrayList<>();
-        optionItems.add(createVideoBufferOption(context, playerData, R.string.video_buffer_size_none, PlayerData.BUFFER_NONE, onBufferSelected));
         optionItems.add(createVideoBufferOption(context, playerData, R.string.video_buffer_size_low, PlayerData.BUFFER_LOW, onBufferSelected));
         optionItems.add(createVideoBufferOption(context, playerData, R.string.video_buffer_size_med, PlayerData.BUFFER_MEDIUM, onBufferSelected));
         optionItems.add(createVideoBufferOption(context, playerData, R.string.video_buffer_size_high, PlayerData.BUFFER_HIGH, onBufferSelected));
+        optionItems.add(createVideoBufferOption(context, playerData, R.string.video_buffer_size_highest, PlayerData.BUFFER_HIGHEST, onBufferSelected));
         return OptionCategory.from(VIDEO_BUFFER_ID, OptionCategory.TYPE_RADIO_LIST, videoBufferTitle, optionItems);
     }
 
@@ -752,6 +763,45 @@ public class AppDialogUtil {
                 PLAYER_REPEAT_ID,
                 OptionCategory.TYPE_RADIO_LIST,
                 context.getString(R.string.action_repeat_mode),
+                options
+        );
+    }
+
+    public static OptionCategory createNetworkEngineCategory(Context context, PlayerTweaksData playerTweaksData) {
+        return createNetworkEngineCategory(context, playerTweaksData, () -> {});
+    }
+
+    public static OptionCategory createNetworkEngineCategory(Context context, PlayerTweaksData playerTweaksData, Runnable onModeSelected) {
+        List<OptionItem> options = new ArrayList<>();
+
+        options.add(UiOptionItem.from(context.getString(R.string.default_lang),
+                context.getString(R.string.default_stack_desc),
+                option -> {
+                    playerTweaksData.setPlayerDataSource(PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT);
+                    onModeSelected.run();
+                },
+                playerTweaksData.getPlayerDataSource() == PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT));
+
+        options.add(UiOptionItem.from("Cronet",
+                context.getString(R.string.cronet_desc),
+                option -> {
+                    playerTweaksData.setPlayerDataSource(PlayerTweaksData.PLAYER_DATA_SOURCE_CRONET);
+                    onModeSelected.run();
+                },
+                playerTweaksData.getPlayerDataSource() == PlayerTweaksData.PLAYER_DATA_SOURCE_CRONET));
+
+        options.add(UiOptionItem.from("OkHttp",
+                context.getString(R.string.okhttp_desc),
+                option -> {
+                    playerTweaksData.setPlayerDataSource(PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP);
+                    onModeSelected.run();
+                },
+                playerTweaksData.getPlayerDataSource() == PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP));
+
+        return OptionCategory.from(
+                PLAYER_ENGINE_ID,
+                OptionCategory.TYPE_RADIO_LIST,
+                context.getString(R.string.player_network_stack),
                 options
         );
     }

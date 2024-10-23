@@ -36,6 +36,7 @@
     <string name="video_buffer">Vyrovnávacia pamäť videa</string>
     <string name="video_buffer_size_none">Žiadna</string>
     <string name="video_buffer_size_low">Nízka</string>
+    <string name="video_buffer_size_lowest">Najnižšia</string>
     <string name="video_buffer_size_med">Stredná</string>
     <string name="video_buffer_size_high">Vysoká</string>
     <string name="update_changelog">Zoznam zmien</string>
@@ -665,4 +666,12 @@
     <string name="local_backup">Lokálna záloha</string>
     <string name="auto_backup">Automatická záloha (raz denne)</string>
     <string name="repeat_mode_reverse_list">Prehrať videá z playlistu alebo kanála v opačnom poradí</string>
+    <string name="calm_msg">Pracujeme na oprave oproblému. Pravidelne kontrolujte aktualizácie.</string>
+    <string name="without_picture">Bez obrazu</string>
+    <string name="video_disabled">Video zakázané</string>
+    <string name="applying_fix">Nezatvárajte prehrávač. Aplikuje sa oprava...</string>
+    <string name="hide_mixes">Skryť mixy</string>
+    <string name="player_global_focus_desc">Táto funkcia ovplyvňuje, ktoré tlačidlo prehrávača bude aktívne pri prechádzaní medzi riadkami tlačidiel prehrávača</string>
+    <string name="disable_network_error_fixing">Zakázať automatickú opravu chýb siete</string>
+    <string name="disable_network_error_fixing_desc">Ak používate sieť VPN, pravdepodobne budete musieť povoliť túto možnosť</string>
 </resources>

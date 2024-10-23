@@ -8,6 +8,7 @@ import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
 import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
 import com.liskovsoft.mediaserviceinterfaces.yt.NotificationsService;
 import com.liskovsoft.mediaserviceinterfaces.yt.SignInService;
+import com.liskovsoft.mediaserviceinterfaces.yt.SignInService.OnAccountChange;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
@@ -23,7 +24,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
-import com.liskovsoft.youtubeapi.service.YouTubeSignInService;
+
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 
@@ -32,7 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MediaServiceManager {
+public class MediaServiceManager implements OnAccountChange {
     private static final String TAG = SettingsManager.class.getSimpleName();
     private static MediaServiceManager sInstance;
     private final MediaItemService mItemService;
@@ -48,6 +49,7 @@ public class MediaServiceManager {
     private Disposable mPlaylistGroupAction;
     private Disposable mAccountListAction;
     private Disposable mPlaylistInfosAction;
+    private Disposable mHistoryAction;
     private static final int MIN_GRID_GROUP_SIZE = 13;
     private static final int MIN_ROW_GROUP_SIZE = 5;
     private static final int MIN_SCALED_GRID_GROUP_SIZE = 35;
@@ -90,9 +92,7 @@ public class MediaServiceManager {
         mSingInService = service.getSignInService();
         mNotificationsService = service.getNotificationsService();
 
-        mSingInService.setOnChange(
-                () -> onAccountChanged(YouTubeSignInService.instance().getSelectedAccount())
-        );
+        mSingInService.addOnAccountChange(this);
     }
 
     public static MediaServiceManager instance() {
@@ -240,7 +240,7 @@ public class MediaServiceManager {
 
         RxHelper.disposeActions(mPlaylistGroupAction);
 
-        Observable<MediaGroup> observable = mContentService.getEmptyPlaylistsObserve();
+        Observable<MediaGroup> observable = mContentService.getPlaylistsObserve();
 
         mPlaylistGroupAction = observable
                 .subscribe(
@@ -297,7 +297,7 @@ public class MediaServiceManager {
     }
 
     public void disposeActions() {
-        RxHelper.disposeActions(mMetadataAction, mUploadsAction, mSignCheckAction);
+        RxHelper.disposeActions(mMetadataAction, mUploadsAction, mSignCheckAction, mRowsAction, mSubscribedChannelsAction);
     }
 
     /**
@@ -365,7 +365,9 @@ public class MediaServiceManager {
     }
 
     public void enableHistory(boolean enable) {
-        RxHelper.runAsyncUser(() -> mContentService.enableHistory(enable));
+        if (enable) { // don't disable history for other clients
+            RxHelper.runAsyncUser(() -> mContentService.enableHistory(true));
+        }
     }
 
     public void clearHistory() {
@@ -381,6 +383,8 @@ public class MediaServiceManager {
             return;
         }
 
+        RxHelper.disposeActions(mHistoryAction);
+
         Observable<Void> historyObservable;
 
         if (video.mediaItem != null) {
@@ -389,7 +393,7 @@ public class MediaServiceManager {
             historyObservable = mItemService.updateHistoryPositionObserve(video.videoId, positionMs / 1_000f);
         }
 
-        RxHelper.execute(historyObservable);
+        mHistoryAction = RxHelper.execute(historyObservable);
     }
 
     public void hideNotification(Video item) {
@@ -418,10 +422,15 @@ public class MediaServiceManager {
     }
 
     public Account getSelectedAccount() {
-        return YouTubeSignInService.instance().getSelectedAccount();
+        return mSingInService.getSelectedAccount();
     }
 
-    private void onAccountChanged(Account account) {
+    public boolean isSigned() {
+        return mSingInService.isSigned();
+    }
+
+    @Override
+    public void onAccountChanged(Account account) {
         for (AccountChangeListener listener : mAccountListeners) {
             listener.onAccountChanged(account);
         }

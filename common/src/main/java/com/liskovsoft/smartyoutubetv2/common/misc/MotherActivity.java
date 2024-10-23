@@ -5,11 +5,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.KeyCharacterMap.UnavailableException;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.Window;
+import android.view.WindowManager;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
@@ -23,6 +27,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,9 +72,16 @@ public class MotherActivity extends FragmentActivity {
         initDpi();
         initTheme();
 
+        // Search Fullscreen routine inside onPause() method
         if (!mIsFullscreenModeEnabled) {
             // There's no way to do this programmatically!
             setTheme(R.style.FitSystemWindows);
+
+            // totally disabling the translucency or any color placed on the status bar and navigation bar
+            //if (Build.VERSION.SDK_INT >= 19) {
+            //    Window w = getWindow();
+            //    w.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            //}
         }
 
         if (mIsOculusQuestFixEnabled) {
@@ -154,15 +166,23 @@ public class MotherActivity extends FragmentActivity {
     }
 
     @Override
-    protected void attachBaseContext(Context newBase) {
-        Context contextWrapper = LocaleContextWrapper.wrap(newBase, LocaleUpdater.getSavedLocale(newBase));
+    protected void attachBaseContext(Context context) {
+        Context contextWrapper = null;
+
+        if (context != null) {
+            contextWrapper = LocaleContextWrapper.wrap(context, LocaleUpdater.getSavedLocale(context));
+        }
 
         super.attachBaseContext(contextWrapper);
     }
 
     @Override
     protected void onResume() {
-        super.onResume();
+        try {
+            super.onResume();
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
 
         // 4K fix with AFR
         applyCustomConfig();

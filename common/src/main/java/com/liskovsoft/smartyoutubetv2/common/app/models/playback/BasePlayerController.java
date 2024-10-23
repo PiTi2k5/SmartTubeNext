@@ -7,34 +7,35 @@ import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerManager;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.listener.PlayerEventListener;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 
-public abstract class PlayerEventListenerHelper implements PlayerEventListener {
-    private MainPlayerController mMainController;
+public abstract class BasePlayerController implements PlayerEventListener {
+    private PlaybackPresenter mMainController;
     private Context mContext;
 
-    public void setMainController(MainPlayerController mainController) {
+    public void setMainController(PlaybackPresenter mainController) {
         mMainController = mainController;
     }
 
-    protected void setAltContext(Context context) {
-        mContext = context;
-    }
-
-    protected MainPlayerController getMainController() {
+    protected PlayerEventListener getMainController() {
         return mMainController;
     }
 
     protected <T extends PlayerEventListener> T getController(Class<T> clazz) {
-        return getMainController().getController(clazz);
+        return mMainController != null ? mMainController.getController(clazz) : null;
     }
 
     public PlayerManager getPlayer() {
         return mMainController != null ? mMainController.getPlayer() : null;
     }
 
+    protected void setAltContext(Context context) {
+        mContext = context;
+    }
+
     public Context getContext() {
-        return mMainController != null ? mMainController.getActivity() : mContext;
+        return mMainController != null ? mMainController.getContext() : mContext;
     }
 
     public Activity getActivity() {
@@ -47,7 +48,7 @@ public abstract class PlayerEventListenerHelper implements PlayerEventListener {
     }
 
     @Override
-    public void openVideo(Video item) {
+    public void onNewVideo(Video item) {
         // NOP
     }
 
@@ -236,16 +237,6 @@ public abstract class PlayerEventListenerHelper implements PlayerEventListener {
 
     @Override
     public void onSeekIntervalClicked() {
-        // NOP
-    }
-
-    @Override
-    public void onChatClicked(boolean enabled) {
-        // NOP
-    }
-
-    @Override
-    public void onChatLongClicked(boolean enabled) {
         // NOP
     }
 

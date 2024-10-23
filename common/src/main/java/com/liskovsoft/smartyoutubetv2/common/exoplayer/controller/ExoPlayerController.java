@@ -48,22 +48,23 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
     private final TrackErrorFixer mTrackErrorFixer;
     private boolean mOnSourceChanged;
     private Video mVideo;
-    private PlayerEventListener mEventListener;
+    private final PlayerEventListener mEventListener;
     private SimpleExoPlayer mPlayer;
     private PlayerView mPlayerView;
     private VolumeBooster mVolumeBooster;
     private boolean mIsEnded;
 
-    public ExoPlayerController(Context context) {
+    public ExoPlayerController(Context context, PlayerEventListener eventListener) {
         PlayerTweaksData playerTweaksData = PlayerTweaksData.instance(context);
         mContext = context.getApplicationContext();
-        mMediaSourceFactory = ExoMediaSourceFactory.instance(context);
+        mMediaSourceFactory = new ExoMediaSourceFactory(context);
         mTrackSelectorManager = new TrackSelectorManager(context);
         mTrackFormatter = new TrackInfoFormatter2();
         mTrackFormatter.enableBitrate(PlayerTweaksData.instance(context).isQualityInfoBitrateEnabled());
         mTrackErrorFixer = new TrackErrorFixer(mTrackSelectorManager);
 
         mMediaSourceFactory.setTrackErrorFixer(mTrackErrorFixer);
+        mEventListener = eventListener;
 
         // Shield 720p fix???
         initFormats();
@@ -189,14 +190,8 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
     @Override
     public void release() {
         mTrackSelectorManager.release();
-
-        if (mPlayer != null) {
-            mPlayer.removeListener(this);
-            mPlayer.stop(true);
-            mPlayer.release();
-            mPlayer = null;
-        }
-
+        mMediaSourceFactory.release();
+        releasePlayer();
         mPlayerView = null;
         mVideo = null;
         // Don't destroy it (needed inside bridge)!
@@ -209,10 +204,10 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
         player.addListener(this);
     }
 
-    @Override
-    public void setEventListener(PlayerEventListener eventListener) {
-        mEventListener = eventListener;
-    }
+    //@Override
+    //public void setEventListener(PlayerEventListener eventListener) {
+    //    mEventListener = eventListener;
+    //}
 
     @Override
     public void setPlayerView(PlayerView playerView) {
@@ -302,7 +297,8 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
         setQualityInfo(mTrackFormatter.getQualityLabel());
 
         // Manage audio focus. E.g. use Spotify when audio is disabled.
-        ExoPlayerInitializer.enableAudioFocus(mPlayer, mTrackSelectorManager.getAudioTrack() != null && !mTrackSelectorManager.getAudioTrack().isEmpty());
+        MediaTrack audioTrack = mTrackSelectorManager.getAudioTrack();
+        ExoPlayerInitializer.enableAudioFocus(mPlayer, audioTrack != null && !audioTrack.isEmpty());
     }
 
     private void notifyOnVideoLoad() {
@@ -481,5 +477,18 @@ public class ExoPlayerController implements Player.EventListener, PlayerControll
         }
 
         return false;
+    }
+
+    private void releasePlayer() {
+        try {
+            if (mPlayer != null) {
+                mPlayer.removeListener(this);
+                mPlayer.stop(true);
+                mPlayer.release();
+                mPlayer = null;
+            }
+        } catch (ArrayIndexOutOfBoundsException e) { // thrown on stop()
+            e.printStackTrace();
+        }
     }
 }

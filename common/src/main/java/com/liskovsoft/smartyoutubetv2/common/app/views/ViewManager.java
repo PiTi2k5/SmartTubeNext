@@ -40,7 +40,7 @@ public class ViewManager {
     private Class<? extends Activity> mDefaultTop;
     private long mPrevThrottleTimeMS;
     private boolean mIsMoveToBackEnabled;
-    private boolean mIsFinishing;
+    private boolean mIsFinished;
     private boolean mIsPlayerOnlyModeEnabled;
     private long mPendingActivityMs;
     private Class<?> mPendingActivityClass;
@@ -305,7 +305,7 @@ public class ViewManager {
         if (activity instanceof MotherActivity) {
             Log.d(TAG, "Trying finish the app...");
             mIsMoveToBackEnabled = true; // close all activities below current one
-            mIsFinishing = true;
+            mIsFinished = true;
 
             mActivityStack.clear();
 
@@ -323,7 +323,6 @@ public class ViewManager {
                 AppUpdatePresenter.unhold();
                 MotherActivity.invalidate();
                 mIsMoveToBackEnabled = false;
-                mIsFinishing = false;
             }, 1_000);
         }
     }
@@ -355,7 +354,8 @@ public class ViewManager {
     private void safeMoveTaskToBack(Activity activity) {
         try {
             activity.moveTaskToBack(true);
-        } catch (NullPointerException | IllegalArgumentException e) {
+        } catch (NullPointerException | IllegalArgumentException | IllegalStateException e) {
+            // Pinned stack isn't top stack (IllegalStateException)
             Log.e(TAG, "Error when moving task to back: %s", e.getMessage());
         }
     }
@@ -364,6 +364,8 @@ public class ViewManager {
      * Small delay to fix PIP transition bug (UI become unresponsive)
      */
     private void safeStartActivity(Context context, Intent intent) {
+        mIsFinished = false;
+
         //if (PlaybackPresenter.instance(mContext).isInPipMode()) {
         //if (PlaybackPresenter.instance(mContext).getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_PIP) {
         if (PlaybackPresenter.instance(mContext).isEngineBlocked()) {
@@ -380,14 +382,15 @@ public class ViewManager {
     private void safeStartActivityInt(Context context, Intent intent) {
         try {
             context.startActivity(intent);
-        } catch (IllegalArgumentException | ActivityNotFoundException | IndexOutOfBoundsException e) {
+        } catch (IllegalArgumentException | ActivityNotFoundException | IndexOutOfBoundsException | NullPointerException e) {
+            // NPE: Attempt to write to field 'boolean com.android.server.am.ActivityStack.mConfigWillChange' on a null object reference
             Log.e(TAG, "Error when starting activity: %s", e.getMessage());
             MessageHelpers.showLongMessage(context, e.getLocalizedMessage());
         }
     }
 
-    public boolean isFinishing() {
-        return mIsFinishing;
+    public boolean isFinished() {
+        return mIsFinished;
     }
 
     //public void enableMoveToBack(boolean enable) {

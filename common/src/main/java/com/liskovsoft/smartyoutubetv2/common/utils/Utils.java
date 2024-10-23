@@ -43,6 +43,8 @@ import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.BaseInputConnection;
+
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -53,10 +55,11 @@ import androidx.work.WorkManager;
 
 import com.jakewharton.processphoenix.ProcessPhoenix;
 import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
+import com.liskovsoft.sharedutils.GlobalConstants;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
-import com.liskovsoft.sharedutils.helpers.PermissionHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
+import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
@@ -67,8 +70,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresen
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SplashPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.WebBrowserPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem.VideoPreset;
@@ -84,10 +85,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
 
 import java.io.UnsupportedEncodingException;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -108,34 +106,6 @@ public class Utils {
     public static final float[] SPEED_LIST_SHORT =
             new float[] {0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f, 2.75f, 3.0f, 3.25f, 3.5f, 3.75f, 4.0f};
     private static boolean sIsGlobalVolumeFixed;
-
-    /**
-     * Limit the maximum size of a Map by removing oldest entries when limit reached
-     */
-    public static <K, V> Map<K, V> createLRUMap(final int maxEntries) {
-        return new LinkedHashMap<K, V>(maxEntries + 1, 0.75f, true) {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-                return size() > maxEntries;
-            }
-        };
-    }
-
-    /**
-     * Trim playlist if one exceeds max size
-     */
-    public static <T> List<T> createLRUList(final int maxEntries) {
-        return new LinkedList<T>() {
-            @Override
-            public boolean add(T t) {
-                if (size() > maxEntries) {
-                    removeFirst();
-                }
-
-                return super.add(t);
-            }
-        };
-    }
 
     @TargetApi(17)
     public static void displayShareVideoDialog(Context context, String videoId) {
@@ -240,22 +210,8 @@ public class Utils {
         }
 
         if (RemoteControlData.instance(context).isDeviceLinkEnabled()) {
-            // Background playback on Android 10 and above
-            // Shows overlay dialog if needed (alive activity required)
-            if (!PermissionHelpers.hasOverlayPermissions(context)) {
-                AppDialogUtil.showConfirmationDialog(
-                        context, context.getString(R.string.remote_control_permission), () -> {
-                            PermissionHelpers.verifyOverlayPermissions(context);
-                            // Service that prevents the app from destroying
-                            if (context instanceof MotherActivity) {
-                                ((MotherActivity) context).addOnResult((request, response, data) -> startService(context, RemoteControlService.class));
-                            }
-                        }
-                );
-            } else {
-                // Service that prevents the app from destroying
-                startService(context, RemoteControlService.class);
-            }
+            // Service that prevents the app from destroying
+            startService(context, RemoteControlService.class);
         } else {
             stopService(context, RemoteControlService.class);
         }
@@ -666,14 +622,12 @@ public class Utils {
             if (type == MediaGroup.TYPE_CHANNEL_UPLOADS) {
                 if (atomicIndex.incrementAndGet() == 1) {
                     ChannelUploadsPresenter.instance(context).clear();
-                    ViewManager.instance(context).startView(ChannelUploadsView.class);
                 }
-                ChannelUploadsPresenter.instance(context).updateGrid(group.get(0));
+                ChannelUploadsPresenter.instance(context).update(group.get(0));
             } else if (type == MediaGroup.TYPE_CHANNEL) {
                 if (atomicIndex.incrementAndGet() == 1) {
                     ChannelPresenter.instance(context).clear();
                     ChannelPresenter.instance(context).setChannel(item);
-                    ViewManager.instance(context).startView(ChannelView.class);
                 }
                 ChannelPresenter.instance(context).updateRows(group);
             } else {
@@ -710,6 +664,14 @@ public class Utils {
         }
     }
 
+    public static void sendKey(Activity activity, int keyCode) {
+        BaseInputConnection  inputConnection = new BaseInputConnection(activity.getWindow().getDecorView().getRootView(), true);
+        KeyEvent kd = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
+        KeyEvent ku = new KeyEvent(KeyEvent.ACTION_UP, keyCode);
+        inputConnection.sendKeyEvent(kd);
+        inputConnection.sendKeyEvent(ku);
+    }
+
     public static void showNotCompatibleMessage(Context context, int msgResId) {
         MessageHelpers.showMessage(context, String.format("%s '%s'",
                 context.getString(R.string.not_compatible_with),
@@ -727,7 +689,7 @@ public class Utils {
     public static void showPlayerControls(Context context, boolean show) {
         PlaybackView view = PlaybackPresenter.instance(context).getView();
         if (view != null) {
-            view.getPlayer().showOverlay(show);
+            view.showOverlay(show);
         }
     }
 
@@ -865,10 +827,6 @@ public class Utils {
         //forceFinishTheApp();
     }
 
-    public static void restartTheApp(Context context) {
-        restartTheApp(context, BOOTSTRAP_ACTIVITY_CLASS_NAME);
-    }
-
     /**
      * Simply kills the app.
      */
@@ -884,9 +842,30 @@ public class Utils {
         startReceiver(context, REMOTE_CONTROL_RECEIVER_CLASS_NAME);
     }
 
-    private static void restartTheApp(Context context, String bootActivityClassName) {
+    public static void restartTheApp(Context context, Intent intent) {
+        ProcessPhoenix.triggerRebirth(context, intent);
+    }
+
+    public static void restartTheApp(Context context) {
         try {
-            ProcessPhoenix.triggerRebirth(context, new Intent(context, Class.forName(bootActivityClassName)));
+            Intent intent = new Intent(context, Class.forName(BOOTSTRAP_ACTIVITY_CLASS_NAME));
+            intent.putExtra(GlobalConstants.INTERNAL_INTENT, true);
+            ProcessPhoenix.triggerRebirth(context, intent);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void restartTheApp(Context context, String videoId) {
+        try {
+            Intent intent = new Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://www.youtube.com/watch?v=" + videoId),
+                    context,
+                    Class.forName(BOOTSTRAP_ACTIVITY_CLASS_NAME)
+            );
+            intent.putExtra(GlobalConstants.INTERNAL_INTENT, true);
+            ProcessPhoenix.triggerRebirth(context, intent);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -1011,5 +990,42 @@ public class Utils {
         }
 
         return uniqueId;
+    }
+
+    public static <T> boolean chainProcess(List<T> listeners, ChainProcessor<T> processor) {
+        boolean result = false;
+
+        for (T listener : listeners) {
+            result = processor.process(listener);
+
+            if (result) {
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    public interface ChainProcessor<T> {
+        boolean process(T listener);
+    }
+
+    public static <T> void process(List<T> listeners, Processor<T> processor) {
+        for (T listener : listeners) {
+            processor.process(listener);
+        }
+    }
+
+    public interface Processor<T> {
+        void process(T listener);
+    }
+
+    public static boolean skipCronet() {
+        // Android 6 and below may crash running Cronet???
+        return VERSION.SDK_INT <= 23 || Helpers.equals(BuildConfig.FLAVOR, "strtarmenia");
+    }
+
+    public static boolean isEnoughRam(Context context) {
+        return VERSION.SDK_INT > 21 && Helpers.getDeviceRam(context) > 1_300_000_000; // 1.3 GB
     }
 }

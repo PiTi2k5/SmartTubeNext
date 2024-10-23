@@ -14,13 +14,13 @@ import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngine;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerEngineConstants;
-import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerUI;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.SubtitleManager.SubtitleStyle;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.ExoFormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.track.MediaTrack;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,7 +70,6 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     private String mAudioLanguage;
     private String mSubtitleLanguage;
     private boolean mIsAllSpeedEnabled;
-    private boolean mIsLegacyCodecsForced;
     private int mRepeatMode;
     private boolean mIsSonyTimerFixEnabled;
     private boolean mIsQualityInfoEnabled;
@@ -89,7 +88,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     private boolean mIsSkip24RateEnabled;
     private boolean mIsSkipShortsEnabled;
     private boolean mIsLiveChatEnabled;
-    private FormatItem mLastSubtitleFormat;
+    private List<FormatItem> mLastSubtitleFormats;
     private List<String> mEnabledSubtitlesPerChannel;
     private boolean mIsSubtitlesPerChannelEnabled;
     private boolean mIsSpeedPerChannelEnabled;
@@ -279,12 +278,12 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     }
 
     public boolean isLegacyCodecsForced() {
-        return mIsLegacyCodecsForced;
+        return MediaServiceData.instance().isFormatEnabled(MediaServiceData.FORMATS_URL) && !MediaServiceData.instance().isFormatEnabled(MediaServiceData.FORMATS_DASH);
     }
 
     public void forceLegacyCodecs(boolean enable) {
-        mIsLegacyCodecsForced = enable;
-        persistState();
+        MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_URL, enable);
+        MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_DASH, !enable);
     }
 
     public boolean isAfrEnabled() {
@@ -404,15 +403,26 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     }
 
     public FormatItem getLastSubtitleFormat() {
-        return mLastSubtitleFormat;
+        return !mLastSubtitleFormats.isEmpty() ? mLastSubtitleFormats.get(0) : FormatItem.SUBTITLE_NONE;
+    }
+
+    public List<FormatItem> getLastSubtitleFormats() {
+        return mLastSubtitleFormats;
     }
 
     private void setLastSubtitleFormat(FormatItem format) {
         if (format != null && !format.isDefault()) {
-            mLastSubtitleFormat = format;
+            mLastSubtitleFormats.remove(format);
+            mLastSubtitleFormats.add(0, format);
         } else if (mSubtitleFormat != null && !mSubtitleFormat.isDefault()) {
-            mLastSubtitleFormat = mSubtitleFormat;
+            mLastSubtitleFormats.remove(mSubtitleFormat);
+            mLastSubtitleFormats.add(0, mSubtitleFormat);
         }
+
+        // Limit max size
+        //if (mLastSubtitleFormats.size() > 3) {
+        //    mLastSubtitleFormats.subList(3, mLastSubtitleFormats.size()).clear();
+        //}
     }
 
     public void enableSubtitlesPerChannel(String channelId) {
@@ -754,7 +764,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mVideoFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 9)), getDefaultVideoFormat());
         mAudioFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 10)), getDefaultAudioFormat());
         mSubtitleFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 11)), getDefaultSubtitleFormat());
-        mVideoBufferType = Helpers.parseInt(split, 12, PlayerEngine.BUFFER_LOW);
+        mVideoBufferType = Helpers.parseInt(split, 12, PlayerEngine.BUFFER_MEDIUM);
         mSubtitleStyleIndex = Helpers.parseInt(split, 13, 4); // yellow on semi bg
         mVideoZoomMode = Helpers.parseInt(split, 14, PlayerEngine.ZOOM_MODE_DEFAULT);
         mSpeed = Helpers.parseFloat(split, 15, 1.0f);
@@ -766,7 +776,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mIsAllSpeedEnabled = Helpers.parseBoolean(split, 21, false);
         // repeat mode was here
         // didn't remember what was there
-        mIsLegacyCodecsForced = Helpers.parseBoolean(split, 24, false);
+        // mIsLegacyCodecsForced
         mIsSonyTimerFixEnabled = Helpers.parseBoolean(split, 25, false);
         // old player tweaks
         mIsQualityInfoEnabled = Helpers.parseBoolean(split, 28, true);
@@ -788,7 +798,8 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         mIsSkip24RateEnabled = Helpers.parseBoolean(split, 44, false);
         mAfrPauseMs = Helpers.parseInt(split, 45, 0);
         mIsLiveChatEnabled = Helpers.parseBoolean(split, 46, false);
-        mLastSubtitleFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 47)), FormatItem.SUBTITLE_NONE);
+        mLastSubtitleFormats = Helpers.parseList(split, 47, ExoFormatItem::from);
+        //mLastSubtitleFormat = Helpers.firstNonNull(ExoFormatItem.from(Helpers.parseStr(split, 47)), FormatItem.SUBTITLE_NONE);
         mLastSpeed = Helpers.parseFloat(split, 48, 1.0f);
         mVideoRotation = Helpers.parseInt(split, 49, 0);
         mVideoZoom = Helpers.parseInt(split, 50, -1);
@@ -822,12 +833,12 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
                 mIsClockEnabled, mIsRemainingTimeEnabled, mBackgroundMode, null, // afrData was there
                 mVideoFormat, mAudioFormat, mSubtitleFormat,
                 mVideoBufferType, mSubtitleStyleIndex, mVideoZoomMode, mSpeed,
-                mIsAfrEnabled, mIsAfrFpsCorrectionEnabled, mIsAfrResSwitchEnabled, null, mAudioDelayMs, mIsAllSpeedEnabled, null, null, // didn't remember what was there
-                mIsLegacyCodecsForced, mIsSonyTimerFixEnabled, null, null, // old player tweaks
+                mIsAfrEnabled, mIsAfrFpsCorrectionEnabled, mIsAfrResSwitchEnabled, null, mAudioDelayMs, mIsAllSpeedEnabled, null, null,
+                null, mIsSonyTimerFixEnabled, null, null, // old player tweaks
                 mIsQualityInfoEnabled, mIsSpeedPerVideoEnabled, mVideoAspectRatio, mIsGlobalClockEnabled, mIsTimeCorrectionEnabled,
                 mIsGlobalEndingTimeEnabled, mIsEndingTimeEnabled, mIsDoubleRefreshRateEnabled, mIsSeekConfirmPlayEnabled,
                 mStartSeekIncrementMs, null, mSubtitleScale, mPlayerVolume, mIsTooltipsEnabled, mSubtitlePosition, mIsNumberKeySeekEnabled,
-                mIsSkip24RateEnabled, mAfrPauseMs, mIsLiveChatEnabled, mLastSubtitleFormat, mLastSpeed, mVideoRotation,
+                mIsSkip24RateEnabled, mAfrPauseMs, mIsLiveChatEnabled, mLastSubtitleFormats, mLastSpeed, mVideoRotation,
                 mVideoZoom, mRepeatMode, mAudioLanguage, mSubtitleLanguage, mEnabledSubtitlesPerChannel, mIsSubtitlesPerChannelEnabled,
                 mIsSpeedPerChannelEnabled, Helpers.mergeArray(mSpeeds.values().toArray()), mPitch, mIsSkipShortsEnabled
         ));
