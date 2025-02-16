@@ -1,6 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
@@ -20,10 +20,12 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 public class VideoStateController extends BasePlayerController {
     private static final String TAG = VideoStateController.class.getSimpleName();
     private static final long MUSIC_VIDEO_MAX_DURATION_MS = 6 * 60 * 1000;
+    private static final long RESTORE_LIVE_BUFFER_MS = 60_000;
     private static final long DEFAULT_LIVE_BUFFER_MS = 60_000; // Minimum issues
     private static final long OFFICIAL_LIVE_BUFFER_MS = 15_000; // Official app buffer
     private static final long LIVE_BUFFER_MS = OFFICIAL_LIVE_BUFFER_MS;
@@ -34,6 +36,7 @@ public class VideoStateController extends BasePlayerController {
     private Video mVideo = new Video();
     private PlayerData mPlayerData;
     private GeneralData mGeneralData;
+    private MediaServiceData mMediaServiceData;
     private PlayerTweaksData mPlayerTweaksData;
     private RemoteControlData mRemoteControlData;
     private VideoStateService mStateService;
@@ -41,12 +44,13 @@ public class VideoStateController extends BasePlayerController {
     private int mTickleLeft;
     private boolean mIncognito;
     //private final Runnable mUpdateHistory = this::updateHistory;
-    private final Runnable mUpdateHistory = () -> {updateHistory(); persistState();};
+    private final Runnable mUpdateHistory = () -> { saveState(); persistState(); };
 
     @Override
     public void onInit() { // called each time a video opened from the browser
         mPlayerData = PlayerData.instance(getContext());
         mGeneralData = GeneralData.instance(getContext());
+        mMediaServiceData = MediaServiceData.instance();
         mPlayerTweaksData = PlayerTweaksData.instance(getContext());
         mRemoteControlData = RemoteControlData.instance(getContext());
         mStateService = VideoStateService.instance(getContext());
@@ -151,13 +155,15 @@ public class VideoStateController extends BasePlayerController {
 
         if (++mTickleLeft > HISTORY_UPDATE_INTERVAL_MINUTES && getPlayer().isPlaying()) {
             mTickleLeft = 0;
-            updateHistory();
+            saveState();
+            persistState(); // ???
         }
     }
 
     @Override
     public void onMetadata(MediaItemMetadata metadata) {
-        updateHistory(); // start watching?
+        saveState(); // start watching?
+        persistState(); // ???
 
         // Channel info should be loaded at this point
         restoreSubtitleFormat();
@@ -294,7 +300,7 @@ public class VideoStateController extends BasePlayerController {
 
         // suppose live stream if buffering near the end
         // boolean isStream = Math.abs(player.getDuration() - player.getCurrentPosition()) < 10_000;
-        settingsPresenter.appendCategory(AppDialogUtil.createSpeedListCategory(getContext(), getPlayer(), mPlayerData));
+        settingsPresenter.appendCategory(AppDialogUtil.createSpeedListCategory(getContext(), getPlayer()));
 
         //settingsPresenter.appendCategory(AppDialogUtil.createRememberSpeedCategory(getContext(), mPlayerData));
         //settingsPresenter.appendCategory(AppDialogUtil.createSpeedMiscCategory(getContext(), mPlayerTweaksData));
@@ -332,7 +338,11 @@ public class VideoStateController extends BasePlayerController {
         // Reset position of music videos
         boolean isShort = state != null && state.durationMs < MUSIC_VIDEO_MAX_DURATION_MS && !mPlayerTweaksData.isRememberPositionOfShortVideosEnabled();
         boolean isVideoEnded = state != null && state.durationMs - state.positionMs < 3_000;
-        boolean isLive = item.isLive && !mPlayerTweaksData.isRememberPositionOfLiveVideosEnabled();
+        boolean isLive = item.isLive;
+
+        if (mPlayerTweaksData.isRememberPositionOfLiveVideosEnabled() && item.isFullLive()) {
+            isLive = false;
+        }
 
         if (isShort || isVideoEnded || isLive) {
             resetPosition(item);
@@ -375,10 +385,6 @@ public class VideoStateController extends BasePlayerController {
         }
     }
 
-    private void persistState() {
-        mStateService.persistState();
-    }
-
     private void restoreVideoFormat() {
         if (mPlayerData.getTempVideoFormat() != null) {
             getPlayer().setFormat(mPlayerData.getTempVideoFormat());
@@ -401,11 +407,15 @@ public class VideoStateController extends BasePlayerController {
         getPlayer().setFormat(result);
     }
 
-    private void saveState() {
+    public void saveState() {
         savePosition();
         updateHistory();
         //persistState(); // persist the state if the device reboots accidentally
         syncWithPlaylists();
+    }
+
+    private void persistState() {
+        mStateService.persistState();
     }
 
     private void savePosition() {
@@ -443,7 +453,7 @@ public class VideoStateController extends BasePlayerController {
         State state = mStateService.getByVideoId(item.videoId);
 
         boolean stateIsOutdated = isStateOutdated(state, item);
-        if (item.getPositionMs() > 0 && stateIsOutdated) { // check that the user logged in
+        if (stateIsOutdated) { // check that the user logged in
             // Web state is buggy on short videos (e.g. video clips)
             boolean isLongVideo = getPlayer().getDurationMs() > MUSIC_VIDEO_MAX_DURATION_MS;
             if (isLongVideo) {
@@ -451,13 +461,8 @@ public class VideoStateController extends BasePlayerController {
             }
         }
 
-        // Web live position is broken. Ignore it.
-        if (stateIsOutdated && item.isLive) {
-            state = null;
-        }
-
         // Set actual position for live videos with uncommon length
-        if ((state == null || state.durationMs - state.positionMs < getLiveThreshold()) && item.isLive) {
+        if ((state == null || state.durationMs - state.positionMs < Math.max(RESTORE_LIVE_BUFFER_MS, getLiveThreshold())) && item.isLive) {
             // Add buffer. Should I take into account segment offset???
             state = new State(item, getPlayer().getDurationMs() - getLiveBuffer());
         }
@@ -475,7 +480,7 @@ public class VideoStateController extends BasePlayerController {
     private void updateHistory() {
         Video video = getVideo();
 
-        if (video == null || (video.isShorts && mGeneralData.isHideShortsFromHistoryEnabled()) ||
+        if (video == null || (video.isShorts && mMediaServiceData.isContentHidden(MediaServiceData.CONTENT_SHORTS_HISTORY)) ||
                 mIncognito || getPlayer() == null || !getPlayer().containsMedia() ||
                 (video.isRemote && mRemoteControlData.isRemoteHistoryDisabled()) ||
                 mGeneralData.getHistoryState() == GeneralData.HISTORY_DISABLED || mStateService.isHistoryBroken()) {
@@ -601,6 +606,11 @@ public class VideoStateController extends BasePlayerController {
             return true;
         }
 
+        // Web live position is broken. Ignore it.
+        if (item.isLive || item.getPositionMs() <= 0) {
+            return false;
+        }
+
         float posPercents1 = state.positionMs * 100f / state.durationMs;
         float posPercents2 = item.getPositionMs() * 100f / item.getDurationMs();
 
@@ -614,8 +624,8 @@ public class VideoStateController extends BasePlayerController {
             return;
         }
 
-        if (mGeneralData.isHideWatchedFromWatchLaterEnabled() && video.percentWatched > 95) { // remove fully watched
-            AppDialogUtil.removeFromWatchLaterPlaylist(getContext(), video);
+        if (MediaServiceData.instance().isContentHidden(MediaServiceData.CONTENT_WATCHED_WATCH_LATER) && video.percentWatched > 95) { // remove fully watched
+            MediaServiceManager.instance().removeFromWatchLaterPlaylist(video);
         }
 
         if (mGeneralData.isHideWatchedFromNotificationsEnabled()) { // remove any watched length
@@ -640,7 +650,8 @@ public class VideoStateController extends BasePlayerController {
     }
 
     private void removeFromHistoryIfNeeded() {
-        if (mGeneralData.getHistoryState() == GeneralData.HISTORY_DISABLED) {
+        // Maintain history to keep video progress
+        if (mGeneralData.getHistoryState() == GeneralData.HISTORY_DISABLED && mStateService.isHistoryBroken()) {
             Video video = getVideo();
             if (video != null) {
                 mStateService.removeByVideoId(video.videoId);

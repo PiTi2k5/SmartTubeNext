@@ -48,12 +48,12 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
             appendCardTextScrollSpeed(settingsPresenter);
         }
         appendChannelSortingCategory(settingsPresenter);
-        appendPlaylistsCategoryStyle(settingsPresenter);
+        //appendPlaylistsCategoryStyle(settingsPresenter);
         appendScaleUI(settingsPresenter);
         if (Build.VERSION.SDK_INT > 19) {
             appendVideoGridScale(settingsPresenter);
         }
-        appendTimeFormatCategory(settingsPresenter);
+        //appendTimeFormatCategory(settingsPresenter);
         appendMiscCategory(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.dialog_main_ui), () -> {
@@ -163,11 +163,9 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         List<OptionItem> options = new ArrayList<>();
 
         for (int[] pair : new int[][] {
-                {R.string.sorting_default, MainUIData.CHANNEL_SORTING_DEFAULT},
-                {R.string.sorting_alphabetically2, MainUIData.CHANNEL_SORTING_NAME2},
+                {R.string.sorting_last_viewed, MainUIData.CHANNEL_SORTING_LAST_VIEWED},
                 {R.string.sorting_alphabetically, MainUIData.CHANNEL_SORTING_NAME},
-                {R.string.sorting_by_new_content, MainUIData.CHANNEL_SORTING_NEW_CONTENT},
-                {R.string.sorting_last_viewed, MainUIData.CHANNEL_SORTING_LAST_VIEWED}}) {
+                {R.string.sorting_by_new_content, MainUIData.CHANNEL_SORTING_NEW_CONTENT}}) {
             options.add(UiOptionItem.from(getContext().getString(pair[0]), optionItem -> {
                 mMainUIData.setChannelCategorySorting(pair[1]);
                 BrowsePresenter.instance(getContext()).updateChannelSorting();
@@ -256,6 +254,13 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
+        options.add(UiOptionItem.from(getContext().getString(R.string.time_format_24) + " " + getContext().getString(R.string.time_format),
+                option -> {
+                    mGeneralData.enable24HourLocale(option.isSelected());
+                    mRestartApp = true;
+                },
+                mGeneralData.is24HourLocaleEnabled()));
+
         options.add(UiOptionItem.from(getContext().getString(R.string.app_corner_clock),
                 option -> {
                     mGeneralData.enableGlobalClock(option.isSelected());
@@ -271,19 +276,19 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
                 option -> mPlayerData.enableGlobalEndingTime(option.isSelected()),
                 mPlayerData.isGlobalEndingTimeEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.old_home_look),
-                option -> {
-                    mGeneralData.enableOldHomeLook(option.isSelected());
-                    mRestartApp = true;
-                },
-                mGeneralData.isOldHomeLookEnabled()));
+        //options.add(UiOptionItem.from(getContext().getString(R.string.old_home_look),
+        //        option -> {
+        //            mGeneralData.enableOldHomeLook(option.isSelected());
+        //            mRestartApp = true;
+        //        },
+        //        mGeneralData.isOldHomeLookEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.old_channel_look),
-                option -> {
-                    mGeneralData.enableOldChannelLook(option.isSelected());
-                    mMainUIData.enableChannelSearchBar(!option.isSelected());
-                },
-                mGeneralData.isOldChannelLookEnabled()));
+        //options.add(UiOptionItem.from(getContext().getString(R.string.old_channel_look),
+        //        option -> {
+        //            mGeneralData.enableOldChannelLook(option.isSelected());
+        //            mMainUIData.enableChannelSearchBar(!option.isSelected());
+        //        },
+        //        mGeneralData.isOldChannelLookEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.channels_old_look),
                 optionItem -> {
@@ -305,6 +310,13 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
                     mRestartApp = true;
                 },
                 mMainUIData.isPinnedChannelRowsEnabled()));
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.playlists_rows),
+                optionItem -> {
+                    mMainUIData.setPlaylistsStyle(optionItem.isSelected() ? MainUIData.PLAYLISTS_STYLE_ROWS : MainUIData.PLAYLISTS_STYLE_GRID);
+                    BrowsePresenter.instance(getContext()).updatePlaylistsStyle();
+                },
+                mMainUIData.getPlaylistsStyle() == MainUIData.PLAYLISTS_STYLE_ROWS));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.channels_filter),
                 optionItem -> mMainUIData.enableChannelsFilter(optionItem.isSelected()),

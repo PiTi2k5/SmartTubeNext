@@ -3,10 +3,10 @@ package com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers;
 import android.annotation.SuppressLint;
 import android.util.Pair;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemFormatInfo;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
+import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
@@ -32,6 +32,8 @@ import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.UniqueRandom;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
+import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
+
 import io.reactivex.disposables.Disposable;
 
 import java.util.Collections;
@@ -52,7 +54,10 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
     private long mSleepTimerStartMs;
     private Disposable mFormatInfoAction;
     private Disposable mMpdStreamAction;
-    private final Runnable mReloadVideo = () -> loadVideo(mLastVideo);
+    private final Runnable mReloadVideo = () -> {
+        getController(VideoStateController.class).saveState();
+        loadVideo(mLastVideo);
+    };
     private final Runnable mLoadNext = this::loadNext;
     private final Runnable mMetadataSync = () -> {
         if (getPlayer() != null) {
@@ -65,7 +70,10 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
         }
     };
     private final Runnable mLoadRandomNext = this::loadRandomNext;
-    private final Runnable mOnLongBuffering = this::onLongBuffering;
+    private final Runnable mOnLongBuffering = () -> {
+        updateBufferingCount();
+        onLongBuffering(isBufferingRecurrent());
+    };
     private final Runnable mRebootApp = () -> {
         if (mLastVideo != null && mLastVideo.hasVideo()) {
             Utils.restartTheApp(getContext(), mLastVideo.videoId);
@@ -117,9 +125,7 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
         Utils.postDelayed(mOnLongBuffering, LONG_BUFFERING_THRESHOLD_MS);
     }
 
-    private void onLongBuffering() {
-        //updateBufferingCount();
-
+    private void onLongBuffering(boolean isRecurrent) {
         if (mLastVideo == null) {
             return;
         }
@@ -128,11 +134,14 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
         if ((!mLastVideo.isLive || mLastVideo.isLiveEnd) &&
                 getPlayer().getDurationMs() - getPlayer().getPositionMs() < STREAM_END_THRESHOLD_MS) {
             getMainController().onPlayEnd();
-        } else if (!mPlayerTweaksData.isNetworkErrorFixingDisabled()) {
+        } else if (isRecurrent) {
             MessageHelpers.showLongMessage(getContext(), R.string.applying_fix);
-            //mPlayerTweaksData.setPlayerDataSource(getNextEngine()); // ???
-            mPlayerTweaksData.setPlayerDataSource(Utils.skipCronet() ? PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT : PlayerTweaksData.PLAYER_DATA_SOURCE_CRONET); // ???
+            enableFasterDataSource();
             restartEngine();
+        } else {
+            YouTubeServiceManager.instance().applyAntiBotFix(); // bot check error?
+            mPlayerTweaksData.enablePersistentAntiBotFix(true);
+            reloadVideo();
         }
     }
 
@@ -183,7 +192,8 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
 
     @Override
     public void onFinish() {
-        mPlaylist.clearPosition();
+        // ???
+        //mPlaylist.clearPosition();
     }
 
     public void loadPrevious() {
@@ -195,6 +205,7 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
         //mLastVideo = null; // in case next video is the same as previous
 
         if (next != null) {
+            forceSectionPlaylistIfNeeded(getPlayer().getVideo(), next);
             openVideoInt(next);
         } else {
             waitMetadataSync(getPlayer().getVideo(), true);
@@ -212,7 +223,7 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
         Video video = getPlayer().getVideo();
         if (video != null && video.finishOnEnded) {
             repeatMode = PlayerEngineConstants.REPEAT_MODE_CLOSE;
-        } else if (video != null && video.isShorts && mPlayerTweaksData.isLoopShortsEnabled()) {
+        } else if (video != null && video.belongsToShortsGroup() && mPlayerTweaksData.isLoopShortsEnabled()) {
             repeatMode = PlayerEngineConstants.REPEAT_MODE_ONE;
         }
 
@@ -342,13 +353,10 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
             getPlayer().showProgressBar(false);
             mSuggestionsController.loadSuggestions(mLastVideo);
             bgImageUrl = mLastVideo.getBackgroundUrl();
-            if (mStateService.isHistoryBroken()) { // temp fix (not work as expected)
-                //YouTubeServiceManager.instance().applyNoPlaybackFix();
-                //scheduleReloadVideoTimer(5_000);
-                scheduleRebootAppTimer(5_000);
-            } else {
-                scheduleNextVideoTimer(5_000);
-            }
+            // Sign in error (bot check error?)
+            YouTubeServiceManager.instance().applyAntiBotFix();
+            mPlayerTweaksData.enablePersistentAntiBotFix(true);
+            scheduleNextVideoTimer(5_000);
         } else if (formatInfo.containsDashVideoFormats() && acceptDashVideoFormats(formatInfo)) {
             Log.d(TAG, "Found regular video in dash format. Loading...");
 
@@ -470,16 +478,9 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
 
         if (Helpers.startsWithAny(message, "Unable to connect to")) {
             // No internet connection
-            if (!mPlayerTweaksData.isNetworkErrorFixingDisabled()) {
-                mPlayerTweaksData.setPlayerDataSource(getNextEngine()); // ???
-            } else {
-                restartEngine = false;
-            }
-            MessageHelpers.showLongMessage(getContext(), shortErrorMsg);
-            return restartEngine;
-        }
-
-        if (error instanceof OutOfMemoryError) {
+            restartEngine = false;
+            resultMsg = shortErrorMsg;
+        } else if (error instanceof OutOfMemoryError) {
             //if (mPlayerData.getVideoBufferType() == PlayerData.BUFFER_LOWEST) {
             //    mPlayerTweaksData.enableSectionPlaylist(false);
             //} else if (mPlayerData.getVideoBufferType() == PlayerData.BUFFER_LOW) {
@@ -490,22 +491,34 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
 
             if (mPlayerData.getVideoBufferType() == PlayerData.BUFFER_MEDIUM || mPlayerData.getVideoBufferType() == PlayerData.BUFFER_LOW) {
                 mPlayerTweaksData.enableSectionPlaylist(false);
+                //mPlayerTweaksData.enableHighBitrateFormats(false);
                 restartEngine = false;
             } else {
                 mPlayerData.setVideoBufferType(PlayerData.BUFFER_MEDIUM);
             }
         } else if (Helpers.containsAny(message, "Exception in CronetUrlRequest")) {
-            if (mLastVideo != null && !mLastVideo.isLive && !mPlayerTweaksData.isNetworkErrorFixingDisabled()) { // Finished live stream may provoke errors in Cronet
-                mPlayerTweaksData.setPlayerDataSource(getNextEngine());
+            if (mLastVideo != null && !mLastVideo.isLive) { // Finished live stream may provoke errors in Cronet
+                mPlayerTweaksData.setPlayerDataSource(PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT);
             } else {
                 restartEngine = false;
             }
-        } else if (Helpers.startsWithAny(message, "Response code: 403", "Response code: 404", "Response code: 503", "Response code: 400")) {
+        } else if (Helpers.startsWithAny(message, "Response code: 403", "Response code: 404", "Response code: 503")) {
             // "Response code: 403" (url deciphered incorrectly)
             // "Response code: 404" (not sure whether below helps)
             // "Response code: 503" (not sure whether below helps)
             // "Response code: 400" (not sure whether below helps)
-            YouTubeServiceManager.instance().applyNoPlaybackFix();
+            if (!isFasterDataSourceEnabled()) {
+                enableFasterDataSource();
+            } else if (!MediaServiceData.instance().isPremiumFixEnabled()) {
+                MediaServiceData.instance().enablePremiumFix(true);
+                restartEngine = false;
+            } else {
+                YouTubeServiceManager.instance().applyNoPlaybackFix();
+                restartEngine = false;
+            }
+        } else if (Helpers.startsWithAny(message, "Response code: 429", "Response code: 400")) {
+            YouTubeServiceManager.instance().applyAntiBotFix();
+            mPlayerTweaksData.enablePersistentAntiBotFix(true);
             restartEngine = false;
         } else if (type == PlayerEventListener.ERROR_TYPE_SOURCE && rendererIndex == PlayerEventListener.RENDERER_INDEX_UNKNOWN) {
             // NOTE: Fixing too many requests or network issues
@@ -514,11 +527,9 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
             // "Response code: 404", "Response code: 429", "Invalid integer size",
             // "Unexpected ArrayIndexOutOfBoundsException", "Unexpected IndexOutOfBoundsException"
             // "Response code: 403" (url deciphered incorrectly)
-            if (!mPlayerTweaksData.isNetworkErrorFixingDisabled()) {
-                mPlayerTweaksData.setPlayerDataSource(getNextEngine());
-            } else {
-                restartEngine = false;
-            }
+            YouTubeServiceManager.instance().applyAntiBotFix();
+            mPlayerTweaksData.enablePersistentAntiBotFix(true);
+            restartEngine = false;
         } else if (type == PlayerEventListener.ERROR_TYPE_RENDERER && rendererIndex == PlayerEventListener.RENDERER_INDEX_SUBTITLE) {
             // "Response code: 500"
             if (mLastVideo != null) {
@@ -653,7 +664,7 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
                     loadNext();
                 } else {
                     AppDialogPresenter dialog = AppDialogPresenter.instance(getContext());
-                    if (!getPlayer().isSuggestionsShown() && (!dialog.isDialogShown() || dialog.isTransparent())) {
+                    if (!getPlayer().isSuggestionsShown() && (!dialog.isDialogShown() || dialog.isOverlay())) {
                         dialog.closeDialog();
                         getPlayer().finishReally();
                     }
@@ -770,9 +781,9 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
 
     private int getNextEngine() {
         int currentEngine = mPlayerTweaksData.getPlayerDataSource();
-        int[] engineList = Utils.skipCronet() ?
-                new int[] { PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT, PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP } :
-                new int[] { PlayerTweaksData.PLAYER_DATA_SOURCE_CRONET, PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT, PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP };
+        Integer[] engineList = Utils.skipCronet() ?
+                new Integer[] { PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT, PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP } :
+                new Integer[] { PlayerTweaksData.PLAYER_DATA_SOURCE_CRONET, PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT, PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP };
         return Helpers.getNextValue(currentEngine, engineList);
     }
 
@@ -797,5 +808,33 @@ public class VideoLoaderController extends BasePlayerController implements OnDat
 
     private boolean isBufferingRecurrent() {
         return mBufferingCount != null && mBufferingCount.first > 2;
+    }
+
+    private void forceSectionPlaylistIfNeeded(Video previous, Video next) {
+        if (previous == null || next == null) {
+            return;
+        }
+
+        // Force to all subsequent videos in section playlist row
+        if (previous.isSectionPlaylistEnabled(getContext())) {
+            previous.forceSectionPlaylist = false;
+            next.forceSectionPlaylist = true;
+        }
+    }
+
+    private static int getFasterDataSource() {
+        return Utils.skipCronet() ? PlayerTweaksData.PLAYER_DATA_SOURCE_DEFAULT : PlayerTweaksData.PLAYER_DATA_SOURCE_CRONET;
+    }
+
+    private void enableFasterDataSource() {
+        int fasterDataSource = getFasterDataSource();
+        if (mPlayerTweaksData.getPlayerDataSource() != fasterDataSource) {
+            mPlayerTweaksData.setPlayerDataSource(fasterDataSource);
+        }
+    }
+
+    private boolean isFasterDataSourceEnabled() {
+        int fasterDataSource = getFasterDataSource();
+        return mPlayerTweaksData.getPlayerDataSource() == fasterDataSource;
     }
 }

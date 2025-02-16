@@ -27,6 +27,7 @@
     <string name="frame_rate_correction">Bildrate korrigieren:\n%s</string>
     <string name="category_background_playback">Hintergrund-Wiedergabe</string>
     <string name="not_implemented">Nicht implementiert</string>
+    <string name="not_supported_by_device">Das Gerät unterstützt diese Funktion nicht</string>
     <string name="option_background_playback_off">Deaktiviert</string>
     <string name="option_background_playback_pip">Bild in Bild</string>
     <string name="option_background_playback_only_audio">Nur Audio</string>
@@ -56,7 +57,7 @@
     <string name="settings_linked_devices">Verbundene Geräte</string>
     <string name="settings_about">Über</string>
     <string name="dialog_account_list">Konto auswählen</string>
-    <string name="dialog_account_none">Kein Konto</string>
+    <string name="dialog_account_none">Keine</string>
     <string name="dialog_remove_account">Abmelden</string>
     <string name="dialog_add_account">Anmelden</string>
     <string name="default_lang">Standard</string>
@@ -296,6 +297,7 @@
     <string name="upload_date_last_hour">Letzte Stunde</string>
     <string name="focus_on_search_results">Autofokus auf Suchergebnisse</string>
     <string name="context_menu">Kontextmenü</string>
+    <string name="context_menu_sorting">Kontextmenü-Sortierung</string>
     <string name="add_remove_from_recent_playlist">Hinzufügen/Entfernen aus letzter Wiedergabeliste</string>
     <string name="hide_settings_section">Einstellungen-Kategorie ausblenden (gefährlich!)</string>
     <string name="volume">Lautstärke %s%%</string>
@@ -350,7 +352,8 @@
     <string name="hide_shorts_from_home">Shorts in Start ausblenden</string>
     <string name="finish_on_disconnect">App nach dem Trennen des Telefons/Tablets beenden</string>
     <string name="update_error">Update-Fehler</string>
-    <string name="hide_shorts_from_history">Shorts in Verlauf ausblenden</string>
+    <string name="hide_shorts_from_search">Shorts im Suchergebnis ausblenden</string>
+    <string name="hide_shorts_from_history">Shorts im Verlauf ausblenden</string>
     <string name="hide_shorts_from_trending">Shorts in Trends ausblenden</string>
     <string name="disable_screensaver">Bildschirmschoner deaktivieren</string>
     <string name="description_not_found">Beschreibung nicht gefunden</string>
@@ -478,6 +481,7 @@
     <string name="skip_24_rate">24fps-Formate überspringen (Echter-Kinomodus-Fix\?)</string>
     <string name="skip_shorts">Shorts überspringen</string>
     <string name="player_disable_suggestions">Vorschläge deaktivieren</string>
+    <string name="suggestions">Vorschläge</string>
     <string name="feedback">Feedback</string>
     <string name="sources">Quellen</string>
     <string name="releases">Versionen</string>
@@ -487,7 +491,7 @@
     <string name="place_chat_left">Chat auf linker Seite platzieren</string>
     <string name="place_comments_left">Kommentare auf linker Seite platzieren</string>
     <string name="use_alt_speech_recognizer">Alternative Spracherkennung</string>
-    <string name="time_format">Stunden-Format</string>
+    <string name="time_format">Zeit-Format</string>
     <string name="time_format_24">24 Stunden</string>
     <string name="time_format_12">12 Stunden (AM/PM)</string>
     <string name="use_alt_speech_recognizer_desc">Funktioniert nicht gut. Verwenden Sie es nur, wenn Sie Probleme mit der Standard-Spracherkennung haben.</string>
@@ -575,7 +579,7 @@
     <string name="sony_frame_drop_fix_desc">Behebt Verzögerungen/Lags auf Sony-TV und einigen anderen Geräten. Hinweis: Mögliche Probleme mit der Audio-Synchronisation.</string>
     <string name="audio_language">Audio-Sprache</string>
     <string name="old_home_look">Altes Aussehen der Startseite</string>
-    <string name="old_channel_look">Altes Aussehen der Kanäle-Kategorie</string>
+    <string name="old_channel_look">Altes Aussehen der Kanalseite</string>
     <string name="hide_shorts_everywhere">Shorts überall ausblenden</string>
     <string name="update_found">Update</string>
     <string name="volume_boost_warning">Einstellungen über dem Grenzwert können die Lautsprecher möglicherweise beschädigen</string>
@@ -588,7 +592,7 @@
     <string name="old_update_notifications">Altes Aussehen der Update-Benachrichtigungen</string>
     <string name="dialog_notification">Benachrichtigung über Update mit Pop-up-Dialog</string>
     <string name="mark_as_watched">Als gesehen markieren</string>
-    <string name="player_ui_animations">Bedienfeld-Animationen aktivieren</string>
+    <string name="player_ui_animations">Animationen der Player-Oberfläche aktivieren</string>
     <string name="player_likes_count">Anzahl der Mag ich/Mag ich nicht anzeigen</string>
     <string name="sorting_alphabetically2">Alphabetisch (schnell, animierte Vorschaubilder)</string>
     <string name="sorting_default">Standard (schnell, animierte Vorschaubilder)</string>
@@ -683,4 +687,9 @@
     <string name="rename_group">Abo-Gruppe umbenennen</string>
     <string name="screen_dimming_amount">Wert für Bildschirm dimmen</string>
     <string name="screen_dimming_timeout">Zeit für Bildschirm dimmen</string>
+    <string name="playlists_rows">Wiedergabelisten-Kategorie als Reihen anzeigen</string>
+    <string name="import_subscriptions_group">Importieren</string>
+    <string name="lb_playback_controls_closed_captioning_disable">Untertitel deaktivieren</string>
+    <string name="lb_playback_controls_closed_captioning_enable">Untertitel aktivieren</string>
+    <string name="my_videos">Meine Videos</string>
 </resources>

@@ -98,7 +98,7 @@ public class ViewManager {
      */
     public void startView(Class<?> viewClass, boolean forceStart) {
         // Skip starting activity twice to get rid of pausing/resuming activity cycle
-        if (Utils.isAppInForeground() && getTopView() != null && getTopView() == viewClass) {
+        if (Utils.isAppInForegroundFixed() && getTopView() != null && getTopView() == viewClass) {
             return;
         }
 
@@ -313,6 +313,9 @@ public class ViewManager {
 
             PlaybackPresenter.instance(activity).forceFinish();
 
+            // NOTE: The device may hung (SecurityException: requires android.permission.BIND_ACCESSIBILITY_SERVICE)
+            //exitToHomeScreen(); // fix open another app from the history stack
+
             // Fix: can't start finished app activity from history.
             // Do reset state because the app should continue to run in the background.
             // NOTE: Don't rely on MotherActivity.onDestroy() because activity can be killed silently.
@@ -325,6 +328,16 @@ public class ViewManager {
                 mIsMoveToBackEnabled = false;
             }, 1_000);
         }
+    }
+
+    /**
+     * SecurityException: requires android.permission.BIND_ACCESSIBILITY_SERVICE
+     */
+    private void exitToHomeScreen() {
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        safeStartActivity(mContext, intent);
     }
 
     public Class<?> getTopView() {
@@ -366,10 +379,8 @@ public class ViewManager {
     private void safeStartActivity(Context context, Intent intent) {
         mIsFinished = false;
 
-        //if (PlaybackPresenter.instance(mContext).isInPipMode()) {
-        //if (PlaybackPresenter.instance(mContext).getBackgroundMode() == PlayerEngine.BACKGROUND_MODE_PIP) {
-        if (PlaybackPresenter.instance(mContext).isEngineBlocked()) {
-            Utils.postDelayed(() -> safeStartActivityInt(context, intent), 50);
+        if (PlaybackPresenter.instance(mContext).isEngineBlocked()) { // Android 14 no-pip fix???
+            Utils.postDelayed(() -> safeStartActivityInt(context, intent), 0); // 50 ms old val
         } else {
             safeStartActivityInt(context, intent);
         }
@@ -382,7 +393,7 @@ public class ViewManager {
     private void safeStartActivityInt(Context context, Intent intent) {
         try {
             context.startActivity(intent);
-        } catch (IllegalArgumentException | ActivityNotFoundException | IndexOutOfBoundsException | NullPointerException e) {
+        } catch (IllegalArgumentException | ActivityNotFoundException | IndexOutOfBoundsException | NullPointerException | SecurityException e) {
             // NPE: Attempt to write to field 'boolean com.android.server.am.ActivityStack.mConfigWillChange' on a null object reference
             Log.e(TAG, "Error when starting activity: %s", e.getMessage());
             MessageHelpers.showLongMessage(context, e.getLocalizedMessage());
@@ -441,11 +452,11 @@ public class ViewManager {
     }
 
     public boolean isPlayerInForeground() {
-        return Utils.isAppInForeground() && getTopView() == PlaybackView.class;
+        return Utils.isAppInForegroundFixed() && getTopView() == PlaybackView.class;
     }
 
     public void moveAppToForeground() {
-        if (!Utils.isAppInForeground()) {
+        if (!Utils.isAppInForegroundFixed()) {
             startView(SplashView.class);
         }
     }

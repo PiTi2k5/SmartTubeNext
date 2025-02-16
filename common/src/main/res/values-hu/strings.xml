@@ -92,7 +92,7 @@
   <string name="color_scheme_dark_grey">Sötétszürke</string>
   <string name="disable_update_check">Frissítés ellenőrzésének kikapcsolása</string>
   <string name="show_again">Újra</string>
-  <string name="check_updates_auto">Automatikus frissítés</string>
+  <string name="check_updates_auto">Új verzió automatikus ellenőrzése</string>
   <string name="select_account_on_boot">Fiókválasztás induláskor</string>
   <string name="player_other">Egyéb beállítások</string>
   <string name="player_full_date">Pontos dátum a leírásban</string>
@@ -544,7 +544,7 @@
   <string name="play_video_incognito">Lejátszás inkognitó módban</string>
   <string name="header_kids_home">Gyermekvideók</string>
   <string name="player_section_playlist">Az aktuális kategória tartalmának használata lejátszási listaként</string>
-  <string name="not_recommend_channel">Nem ajánlom a csatornát</string>
+  <string name="not_recommend_channel">Ne ajánl csatornát</string>
   <string name="you_wont_see_this_channel">Ez a csatorna nem jelenik meg az ajánlások között</string>
   <string name="proxy_test_urls">https://www.youtube.com\nhttps://www.google.com</string>
   <string name="header_trending">Felkapott</string>
@@ -678,4 +678,12 @@
   <string name="add_to_subscriptions_group">Csatorna hozzáadása/eltávolítása a csoportokhoz</string>
   <string name="new_subscriptions_group">Új csoport</string>
   <string name="rename_group">A csoport átnevezése</string>
+  <string name="screen_dimming_amount">Képernyő elsötétítése</string>
+  <string name="screen_dimming_timeout">Képernyő elsötétítési ideje</string>
+  <string name="playlists_rows">Lejátszási listák szakasz megjelenítése sorokként</string>
+  <string name="not_supported_by_device">A készülék nem támogatja ezt a funkciót</string>
+  <string name="video_buffer_size_lowest">Legalacsonyabb</string>
+  <string name="video_buffer_size_highest">Legmagasabb</string>
+  <string name="suggestions">Javaslatok</string>
+  <string name="place_comments_left">Helyezze a megjegyzéseket balra</string>
 </resources>

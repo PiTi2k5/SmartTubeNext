@@ -388,7 +388,7 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         mUIScale = Helpers.parseFloat(split, 2, 1.0f);
         mColorSchemeIndex = Helpers.parseInt(split, 3, 1);
         mIsCardMultilineTitleEnabled = Helpers.parseBoolean(split, 4, true);
-        mChannelCategorySorting = Helpers.parseInt(split, 5, CHANNEL_SORTING_NEW_CONTENT);
+        mChannelCategorySorting = Helpers.parseInt(split, 5, CHANNEL_SORTING_LAST_VIEWED);
         mPlaylistsStyle = Helpers.parseInt(split, 6, PLAYLISTS_STYLE_GRID);
         mCardTitleLinesNum = Helpers.parseInt(split, 7, 1);
         mIsCardTextAutoScrollEnabled = Helpers.parseBoolean(split, 8, true);
@@ -419,9 +419,8 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         
         updateDefaultValues();
     }
-
-    @Override
-    protected void persistState() {
+    
+    private void persistState() {
         mPrefs.setProfileData(MAIN_UI_DATA, Helpers.mergeData(mIsCardAnimatedPreviewsEnabled,
                 mVideoGridScale, mUIScale, mColorSchemeIndex, mIsCardMultilineTitleEnabled,
                 mChannelCategorySorting, mPlaylistsStyle, mCardTitleLinesNum, mIsCardTextAutoScrollEnabled,
@@ -429,7 +428,7 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
                 null, mThumbQuality, mIsCardMultilineSubtitleEnabled, Helpers.mergeList(mMenuItemsOrdered),
                 mIsChannelsFilterEnabled, mIsChannelSearchBarEnabled, mIsPinnedChannelRowsEnabled));
 
-        super.persistState();
+        onDataChange();
     }
 
     public static class ColorScheme {
@@ -456,10 +455,19 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
             int bits = 32 - 27;
             mMenuItems = mMenuItems << bits >>> bits; // remove auto enabled bits
         }
+
+        if (mChannelCategorySorting == CHANNEL_SORTING_NAME2) {
+            mChannelCategorySorting = CHANNEL_SORTING_NAME;
+        }
+
+        if (mChannelCategorySorting == CHANNEL_SORTING_DEFAULT) {
+            mChannelCategorySorting = CHANNEL_SORTING_LAST_VIEWED;
+        }
     }
 
     @Override
     public void onProfileChanged() {
         restoreState();
+        onDataChange();
     }
 }

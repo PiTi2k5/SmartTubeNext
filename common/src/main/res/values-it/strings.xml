@@ -27,6 +27,7 @@
     <string name="frame_rate_correction">Correggi fps:\n%s</string>
     <string name="category_background_playback">Riproduzione in background</string>
     <string name="not_implemented">Non implementato</string>
+    <string name="not_supported_by_device">Il dispositivo non supporta questa funzionalità</string>
     <string name="option_background_playback_off">Disabilitato</string>
     <string name="option_background_playback_pip">Immagine nell\'immagine</string>
     <string name="option_background_playback_only_audio">Solo audio</string>
@@ -269,7 +270,7 @@
     <string name="skip_each_segment_once">Non saltare di nuovo i segmenti</string>
     <string name="disable_ok_long_press">Disabilita pressione prolungata del pulsante OK</string>
     <string name="disable_ok_long_press_desc">Destinato a controller difettosi in cui il pulsante OK non funziona correttamente</string>
-    <string name="player_time_correction">Visualizza la durata in base alla velocità</string>
+    <string name="player_time_correction">Mostra la durata con correzione della velocità</string>
     <string name="sponsor_color_markers">Indicatori colorati sulla barra di avanzamento</string>
     <string name="refresh_section">Aggiorna sezione</string>
     <string name="option_disabled">Disabilitato</string>
@@ -296,6 +297,7 @@
     <string name="upload_date_last_hour">Ultima ora</string>
     <string name="focus_on_search_results">Messa a fuoco automatica sui risultati della ricerca</string>
     <string name="context_menu">Menu contestuale</string>
+    <string name="context_menu_sorting">Ordinamento del menu contestuale</string>
     <string name="add_remove_from_recent_playlist">Aggiungi/Rimuovi dalla playlist recente</string>
     <string name="hide_settings_section">Nascondi la sezione Impostazioni (pericoloso!)</string>
     <string name="volume">Volume %s%%</string>
@@ -337,7 +339,7 @@
     <string name="msg_player_error_source2">L\'URL non funziona o l\'ora del dispositivo non è corretta.\nDi solito si tratta di un bug nell\'app.</string>
     <string name="msg_player_error_video_source">L\'URL VIDEO non funziona o l\'ora del dispositivo non è corretta.\nDi solito si tratta di un bug nell\'app.</string>
     <string name="msg_player_error_audio_source">L\'URL AUDIO non funziona o l\'ora del dispositivo non è corretta.\nDi solito si tratta di un bug nell\'app.</string>
-    <string name="msg_player_error_subtitle_source">L\'URL SUBTITLE non funziona o l\'ora del dispositivo non è corretta.\nDi solito si tratta di un bug nell\'app.</string>	
+    <string name="msg_player_error_subtitle_source">L\'URL SUBTITLE non funziona o l\'ora del dispositivo non è corretta.\nDi solito si tratta di un bug nell\'app.</string>
     <string name="hide_upcoming">Nascondi in arrivo dalle Iscrizioni</string>
     <string name="hide_upcoming_channel">Nascondi in arrivo dal canale</string>
     <string name="hide_upcoming_home">Nascondi in arrivo dalla Home</string>
@@ -350,6 +352,7 @@
     <string name="hide_shorts_from_home">Nascondi i video brevi dalla Home</string>
     <string name="finish_on_disconnect">Chiudi l\'app dopo aver scollegato il telefono/tablet</string>
     <string name="update_error">Errore di aggiornamento</string>
+    <string name="hide_shorts_from_search">Nascondi i video brevi dal risultato della ricerca</string>
     <string name="hide_shorts_from_history">Nascondi i video brevi dalla Cronologia</string>
     <string name="hide_shorts_from_trending">Nascondi i video brevi dalle Tendenze</string>
     <string name="disable_screensaver">Disabilita lo screensaver</string>
@@ -478,6 +481,7 @@
     <string name="skip_24_rate">Salta i formati a 24 fps (correzione per la modalità cinema reale\?)</string>
     <string name="skip_shorts">Salta i video brevi</string>
     <string name="player_disable_suggestions">Disabilita suggerimenti</string>
+    <string name="suggestions">Suggerimenti</string>
     <string name="feedback">Feedback</string>
     <string name="sources">Sorgenti</string>
     <string name="releases">Rilasci</string>
@@ -588,7 +592,7 @@
     <string name="old_update_notifications">Il vecchio aspetto delle notifiche di aggiornamento</string>
     <string name="dialog_notification">Notifica aggiornamenti con una finestra di dialogo pop-up</string>
     <string name="mark_as_watched">Contrassegna come già visto</string>
-    <string name="player_ui_animations">Abilita le animazioni del pannello di controllo</string>
+    <string name="player_ui_animations">Abilita le animazioni dell\'interfaccia utente del lettore</string>
     <string name="player_likes_count">Mostra il conteggio dei Mi piace/Non mi piace</string>
     <string name="sorting_alphabetically2">In ordine alfabetico (anteprime veloci e animate)</string>
     <string name="sorting_default">Predefinito (anteprime veloci e animate)</string>
@@ -660,7 +664,7 @@
     <string name="pitch_effect">Effetto pitch</string>
     <string name="fullscreen_mode">Modalità a schermo intero (senza barre di sistema)</string>
     <string name="player_only_mode">Mostra solo il lettore se il video viene aperto all\'esterno dell\'app</string>
-    <string name="pinned_channel_rows">Visualizza il canale bloccato come righe</string>
+    <string name="pinned_channel_rows">Mostra il canale bloccato come righe</string>
     <string name="prefer_ipv4">Preferisci DNS IPv4</string>
     <string name="prefer_ipv4_desc">Potrebbe risolvere situazioni in cui l\'app non funziona affatto.\nNota: potrebbe causare blocchi e arresti anomali (specialmente su dispositivi Android 8 o Dune HD)</string>
     <string name="long_press_for_settings">PREMI A LUNGO PER LE IMPOSTAZIONI</string>
@@ -683,4 +687,8 @@
     <string name="rename_group">Rinomina il gruppo di iscrizioni</string>
     <string name="screen_dimming_amount">Quantità oscuramento schermo</string>
     <string name="screen_dimming_timeout">Timeout oscuramento schermo</string>
+    <string name="playlists_rows">Mostra la sezione Playlist come righe</string>
+    <string name="import_subscriptions_group">Importa</string>
+    <string name="lb_playback_controls_closed_captioning_disable">Disabilita i sottotitoli per non udenti</string>
+    <string name="lb_playback_controls_closed_captioning_enable">Abilita i sottotitoli per non udenti</string>
 </resources>

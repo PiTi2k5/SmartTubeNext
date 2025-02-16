@@ -27,6 +27,7 @@
     <string name="frame_rate_correction">Fix fps:\n%s</string>
     <string name="category_background_playback">Background playback</string>
     <string name="not_implemented">Not implemented</string>
+    <string name="not_supported_by_device">The device does not support this feature</string>
     <string name="option_background_playback_off">Disabled</string>
     <string name="option_background_playback_pip">Picture in picture</string>
     <string name="option_background_playback_only_audio">Only audio</string>
@@ -175,7 +176,7 @@
     <string name="device_connected">Device \"%s\" has been connected</string>
     <string name="device_disconnected">Device \"%s\" has been disconnected</string>
     <string name="settings_ui_scale">UI scale</string>
-    <string name="msg_restart_app">Please restart the app to apply this settings</string>
+    <string name="msg_restart_app">Please restart the app to apply these settings</string>
     <string name="settings_block">Content blocking</string>
     <string name="msg_applying">Applying %s…</string>
     <string name="msg_done">Done</string>
@@ -269,7 +270,7 @@
     <string name="skip_each_segment_once">Don\'t skip segments again</string>
     <string name="disable_ok_long_press">Disable OK button long press</string>
     <string name="disable_ok_long_press_desc">Intended for buggy controllers where OK button does not function properly</string>
-    <string name="player_time_correction">Display the time with respect of speed</string>
+    <string name="player_time_correction">Show the time with speed correction</string>
     <string name="sponsor_color_markers">Color markers on progress bar</string>
     <string name="refresh_section">Refresh section</string>
     <string name="option_disabled">Disabled</string>
@@ -296,6 +297,7 @@
     <string name="upload_date_last_hour">Last hour</string>
     <string name="focus_on_search_results">Autofocus on search results</string>
     <string name="context_menu">Context menu</string>
+    <string name="context_menu_sorting">Context menu sorting</string>
     <string name="add_remove_from_recent_playlist">Add/Remove from recent playlist</string>
     <string name="hide_settings_section">Hide Settings section (dangerous!)</string>
     <string name="volume">Volume %s%%</string>
@@ -350,6 +352,7 @@
     <string name="hide_shorts_from_home">Hide shorts from Home</string>
     <string name="finish_on_disconnect">Close the app after disconnecting the phone/tablet</string>
     <string name="update_error">Update error</string>
+    <string name="hide_shorts_from_search">Hide shorts from the search result</string>
     <string name="hide_shorts_from_history">Hide shorts from History</string>
     <string name="hide_shorts_from_trending">Hide shorts from Trending</string>
     <string name="disable_screensaver">Disable screensaver</string>
@@ -478,6 +481,7 @@
     <string name="skip_24_rate">Skip 24fps formats (real cinema mode fix\?)</string>
     <string name="skip_shorts">Skip Shorts</string>
     <string name="player_disable_suggestions">Disable suggestions</string>
+    <string name="suggestions">Suggestions</string>
     <string name="feedback">Feedback</string>
     <string name="sources">Sources</string>
     <string name="releases">Releases</string>
@@ -588,7 +592,7 @@
     <string name="old_update_notifications">Old look of the update notifications</string>
     <string name="dialog_notification">Notify about updates with a pop-up dialog</string>
     <string name="mark_as_watched">Mark as watched</string>
-    <string name="player_ui_animations">Enable control panel animations</string>
+    <string name="player_ui_animations">Enable player UI animations</string>
     <string name="player_likes_count">Show likes/dislikes count</string>
     <string name="sorting_alphabetically2">Alphabetically (fast, animated previews)</string>
     <string name="sorting_default">Default (fast, animated previews)</string>
@@ -660,7 +664,7 @@
     <string name="pitch_effect">Pitch effect</string>
     <string name="fullscreen_mode">Fullscreen mode (without system bars)</string>
     <string name="player_only_mode">Show only the player if the video is opened outside of the app</string>
-    <string name="pinned_channel_rows">Display pinned channel as rows</string>
+    <string name="pinned_channel_rows">Show pinned channel as rows</string>
     <string name="prefer_ipv4">Prefer IPv4 DNS</string>
     <string name="prefer_ipv4_desc">Could fix situations when the app isn\'t working at all.\nNote. May cause hangs and crashes (especially on Android 8 devices or Dune HD)</string>
     <string name="long_press_for_settings">LONG PRESS FOR SETTINGS</string>
@@ -683,4 +687,9 @@
     <string name="rename_group">Rename the subscription group</string>
     <string name="screen_dimming_amount">Screen dimming amount</string>
     <string name="screen_dimming_timeout">Screen dimming timeout</string>
+    <string name="playlists_rows">Show Playlists section as rows</string>
+    <string name="import_subscriptions_group">Import</string>
+    <string name="lb_playback_controls_closed_captioning_disable">Disable Closed Captioning</string>
+    <string name="lb_playback_controls_closed_captioning_enable">Enable Closed Captioning</string>
+    <string name="my_videos">My videos</string>
 </resources>

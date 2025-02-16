@@ -2,19 +2,13 @@ package com.liskovsoft.smartyoutubetv2.common.prefs;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.os.Build;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
-import com.liskovsoft.sharedutils.helpers.DateHelper;
+
 import com.liskovsoft.sharedutils.helpers.Helpers;
-import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
-import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 
-import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -75,8 +69,6 @@ public class GeneralData implements ProfileChangeListener {
     private boolean mIsAltAppIconEnabled;
     private int mVersionCode;
     private boolean mIsSelectChannelSectionEnabled;
-    private boolean mIsOldHomeLookEnabled;
-    private boolean mIsOldChannelLookEnabled;
     private boolean mIsOldUpdateNotificationsEnabled;
     private boolean mRememberSubscriptionsPosition;
     private boolean mRememberPinnedPosition;
@@ -84,7 +76,6 @@ public class GeneralData implements ProfileChangeListener {
     private boolean mIsRemapDpadUpToVolumeEnabled;
     private boolean mIsRemapDpadLeftToVolumeEnabled;
     private boolean mIsHideWatchedFromNotificationsEnabled;
-    private boolean mIsHideWatchedFromWatchLaterEnabled;
     private List<String> mChangelog;
     private Map<String, Integer> mPlaylistOrder;
     private List<Video> mPendingStreams;
@@ -150,26 +141,6 @@ public class GeneralData implements ProfileChangeListener {
         return mOldPinnedItems;
     }
 
-    public void hideShortsFromSubscriptions(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromSubscriptions(enable);
-    }
-
-    public boolean isHideShortsFromSubscriptionsEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromSubscriptionsEnabled();
-    }
-
-    public void hideShortsFromChannel(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromChannel(enable);
-    }
-
-    public boolean isHideShortsFromChannelEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromChannelEnabled();
-    }
-
-    public void hideStreamsFromSubscriptions(boolean enable) {
-        GlobalPreferences.sInstance.hideStreamsFromSubscriptions(enable);
-    }
-
     public void rememberSubscriptionsPosition(boolean remember) {
         mRememberSubscriptionsPosition = remember;
         persistState();
@@ -188,22 +159,6 @@ public class GeneralData implements ProfileChangeListener {
         return mRememberPinnedPosition;
     }
 
-    public void hideWatchedFromHome(boolean enable) {
-        GlobalPreferences.sInstance.hideWatchedFromHome(enable);
-    }
-
-    public boolean isHideWatchedFromHomeEnabled() {
-        return GlobalPreferences.sInstance.isHideWatchedFromHomeEnabled();
-    }
-
-    public void hideWatchedFromSubscriptions(boolean enable) {
-        GlobalPreferences.sInstance.hideWatchedFromSubscriptions(enable);
-    }
-
-    public boolean isHideWatchedFromSubscriptionsEnabled() {
-        return GlobalPreferences.sInstance.isHideWatchedFromSubscriptionsEnabled();
-    }
-
     public void hideWatchedFromNotifications(boolean enable) {
         mIsHideWatchedFromNotificationsEnabled = enable;
         persistState();
@@ -211,67 +166,6 @@ public class GeneralData implements ProfileChangeListener {
 
     public boolean isHideWatchedFromNotificationsEnabled() {
         return mIsHideWatchedFromNotificationsEnabled;
-    }
-
-    public void hideWatchedFromWatchLater(boolean enable) {
-        mIsHideWatchedFromWatchLaterEnabled = enable;
-        persistState();
-    }
-
-    public boolean isHideWatchedFromWatchLaterEnabled() {
-        return mIsHideWatchedFromWatchLaterEnabled;
-    }
-
-    public boolean isHideStreamsFromSubscriptionsEnabled() {
-        return GlobalPreferences.sInstance.isHideStreamsFromSubscriptionsEnabled();
-    }
-
-    public void hideShortsFromHome(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromHome(enable);
-    }
-
-    public boolean isHideShortsFromHomeEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromHomeEnabled();
-    }
-
-    public void hideShortsFromHistory(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromHistory(enable);
-    }
-
-    public boolean isHideShortsFromHistoryEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromHistoryEnabled();
-    }
-
-    public void hideShortsFromTrending(boolean enable) {
-        GlobalPreferences.sInstance.hideShortsFromTrending(enable);
-    }
-
-    public boolean isHideShortsFromTrendingEnabled() {
-        return GlobalPreferences.sInstance.isHideShortsFromTrendingEnabled();
-    }
-
-    public void hideUpcomingFromSubscriptions(boolean enable) {
-        GlobalPreferences.sInstance.hideUpcomingFromSubscriptions(enable);
-    }
-
-    public boolean isHideUpcomingFromSubscriptionsEnabled() {
-        return GlobalPreferences.sInstance.isHideUpcomingFromSubscriptionsEnabled();
-    }
-
-    public void hideUpcomingFromChannel(boolean enable) {
-        GlobalPreferences.sInstance.hideUpcomingFromChannel(enable);
-    }
-
-    public boolean isHideUpcomingFromChannelEnabled() {
-        return GlobalPreferences.sInstance.isHideUpcomingFromChannelEnabled();
-    }
-
-    public void hideUpcomingFromHome(boolean enable) {
-        GlobalPreferences.sInstance.hideUpcomingFromHome(enable);
-    }
-
-    public boolean isHideUpcomingFromHomeEnabled() {
-        return GlobalPreferences.sInstance.isHideUpcomingFromHomeEnabled();
     }
 
     public void disableScreensaver(boolean enable) {
@@ -701,24 +595,6 @@ public class GeneralData implements ProfileChangeListener {
         return mIsSelectChannelSectionEnabled;
     }
 
-    public void enableOldHomeLook(boolean enable) {
-        mIsOldHomeLookEnabled = enable;
-        persistState();
-    }
-
-    public boolean isOldHomeLookEnabled() {
-        return mIsOldHomeLookEnabled;
-    }
-
-    public void enableOldChannelLook(boolean enable) {
-        mIsOldChannelLookEnabled = enable;
-        persistState();
-    }
-
-    public boolean isOldChannelLookEnabled() {
-        return mIsOldChannelLookEnabled;
-    }
-
     public void enableOldUpdateNotifications(boolean enable) {
         mIsOldUpdateNotificationsEnabled = enable;
         persistState();
@@ -844,7 +720,7 @@ public class GeneralData implements ProfileChangeListener {
         mIsSelectChannelSectionEnabled = Helpers.parseBoolean(split, 40, true);
         mMasterPassword = Helpers.parseStr(split, 41);
         // StackOverflow on old devices?
-        mIsOldHomeLookEnabled = Helpers.parseBoolean(split, 42, Build.VERSION.SDK_INT <= 19);
+        //mIsOldHomeLookEnabled = Helpers.parseBoolean(split, 42, Build.VERSION.SDK_INT <= 19);
         mIsOldUpdateNotificationsEnabled = Helpers.parseBoolean(split, 43, false);
         mScreensaverDimmingPercents = Helpers.parseInt(split, 44, 80);
         mIsRemapNextToSpeedEnabled = Helpers.parseBoolean(split, 45, false);
@@ -862,9 +738,9 @@ public class GeneralData implements ProfileChangeListener {
         mChangelog = Helpers.parseStrList(split, 57);
         mPlayerExitShortcut = Helpers.parseInt(split, 58, EXIT_SINGLE_BACK);
         // StackOverflow on old devices?
-        mIsOldChannelLookEnabled = Helpers.parseBoolean(split, 59, Build.VERSION.SDK_INT <= 19);
+        //mIsOldChannelLookEnabled = Helpers.parseBoolean(split, 59, Build.VERSION.SDK_INT <= 19);
         mIsFullscreenModeEnabled = Helpers.parseBoolean(split, 60, true);
-        mIsHideWatchedFromWatchLaterEnabled = Helpers.parseBoolean(split, 61, false);
+        //mIsHideWatchedFromWatchLaterEnabled = Helpers.parseBoolean(split, 61, false);
         mRememberPinnedPosition = Helpers.parseBoolean(split, 62, false);
         mSelectedItems = Helpers.parseMap(split, 63, Helpers::parseInt, Video::fromString);
         mIsFirstUseTooltipEnabled = Helpers.parseBoolean(split, 64, true);
@@ -884,10 +760,10 @@ public class GeneralData implements ProfileChangeListener {
                 mIsHideShortsFromHomeEnabled, mIsHideShortsFromHistoryEnabled, mIsScreensaverDisabled, mIsVPNEnabled, mLastPlaylistTitle,
                 mPlaylistOrder, mPendingStreams, mIsGlobalClockEnabled, null, mSettingsPassword, mIsChildModeEnabled, mIsHistoryEnabled,
                 mScreensaverTimeoutMs, null, mIsAltAppIconEnabled, mVersionCode, mIsSelectChannelSectionEnabled, mMasterPassword,
-                mIsOldHomeLookEnabled, mIsOldUpdateNotificationsEnabled, mScreensaverDimmingPercents, mIsRemapNextToSpeedEnabled, mIsRemapPlayToOKEnabled,
+                null, mIsOldUpdateNotificationsEnabled, mScreensaverDimmingPercents, mIsRemapNextToSpeedEnabled, mIsRemapPlayToOKEnabled,
                 mHistoryState, mRememberSubscriptionsPosition, null, mIsRemapNumbersToSpeedEnabled, mIsRemapDpadUpToSpeedEnabled, mIsRemapChannelUpToVolumeEnabled,
                 mIsRemapDpadUpToVolumeEnabled, mIsRemapDpadLeftToVolumeEnabled, mIsRemapNextToFastForwardEnabled, mIsHideWatchedFromNotificationsEnabled,
-                mChangelog, mPlayerExitShortcut, mIsOldChannelLookEnabled, mIsFullscreenModeEnabled, mIsHideWatchedFromWatchLaterEnabled,
+                mChangelog, mPlayerExitShortcut, null, mIsFullscreenModeEnabled, null,
                 mRememberPinnedPosition, mSelectedItems, mIsFirstUseTooltipEnabled, mIsDeviceSpecificBackupEnabled, mIsAutoBackupEnabled,
                 mIsRemapPageDownToSpeedEnabled));
     }

@@ -95,6 +95,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     private final Map<String, SpeedItem> mSpeeds = new HashMap<>();
     private float mPitch;
     private long mAfrSwitchTimeMs;
+    private List<String> mLastAudioLanguages;
 
     private static class SpeedItem {
         public String channelId;
@@ -436,6 +437,10 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
     }
 
     public boolean isSubtitlesPerChannelEnabled(String channelId) {
+        if (channelId == null) {
+            return false;
+        }
+
         return mEnabledSubtitlesPerChannel.contains(channelId);
     }
 
@@ -620,7 +625,17 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
 
     public void setAudioLanguage(String language) {
         mAudioLanguage = language;
+        setLastAudioLanguage(language);
         persistState();
+    }
+
+    public List<String> getLastAudioLanguages() {
+        return mLastAudioLanguages;
+    }
+
+    private void setLastAudioLanguage(String language) {
+        mLastAudioLanguages.remove(language);
+        mLastAudioLanguages.add(0, language);
     }
 
     public String getSubtitleLanguage() {
@@ -813,6 +828,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         String[] speeds = Helpers.parseArray(split, 57);
         mPitch = Helpers.parseFloat(split, 58, 1.0f);
         mIsSkipShortsEnabled = Helpers.parseBoolean(split, 59, false);
+        mLastAudioLanguages = Helpers.parseStrList(split, 60);
 
         if (speeds != null) {
             for (String speedSpec : speeds) {
@@ -826,8 +842,7 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
         }
     }
 
-    @Override
-    protected void persistState() {
+    private void persistState() {
         mPrefs.setProfileData(VIDEO_PLAYER_DATA, Helpers.mergeData(mOKButtonBehavior, mUiHideTimeoutSec, null,
                 mSeekPreviewMode, mIsSeekConfirmPauseEnabled,
                 mIsClockEnabled, mIsRemainingTimeEnabled, mBackgroundMode, null, // afrData was there
@@ -840,10 +855,10 @@ public class PlayerData extends DataChangeBase implements PlayerEngineConstants,
                 mStartSeekIncrementMs, null, mSubtitleScale, mPlayerVolume, mIsTooltipsEnabled, mSubtitlePosition, mIsNumberKeySeekEnabled,
                 mIsSkip24RateEnabled, mAfrPauseMs, mIsLiveChatEnabled, mLastSubtitleFormats, mLastSpeed, mVideoRotation,
                 mVideoZoom, mRepeatMode, mAudioLanguage, mSubtitleLanguage, mEnabledSubtitlesPerChannel, mIsSubtitlesPerChannelEnabled,
-                mIsSpeedPerChannelEnabled, Helpers.mergeArray(mSpeeds.values().toArray()), mPitch, mIsSkipShortsEnabled
+                mIsSpeedPerChannelEnabled, Helpers.mergeArray(mSpeeds.values().toArray()), mPitch, mIsSkipShortsEnabled, mLastAudioLanguages
         ));
 
-        super.persistState();
+        onDataChange();
     }
 
     @Override

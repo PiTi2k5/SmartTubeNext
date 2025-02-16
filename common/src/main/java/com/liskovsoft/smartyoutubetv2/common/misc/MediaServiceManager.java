@@ -2,20 +2,20 @@ package com.liskovsoft.smartyoutubetv2.common.misc;
 
 import android.content.Context;
 import android.util.Pair;
-import com.liskovsoft.appupdatechecker2.other.SettingsManager;
-import com.liskovsoft.mediaserviceinterfaces.yt.ContentService;
-import com.liskovsoft.mediaserviceinterfaces.yt.MediaItemService;
-import com.liskovsoft.mediaserviceinterfaces.yt.ServiceManager;
-import com.liskovsoft.mediaserviceinterfaces.yt.NotificationsService;
-import com.liskovsoft.mediaserviceinterfaces.yt.SignInService;
-import com.liskovsoft.mediaserviceinterfaces.yt.SignInService.OnAccountChange;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.Account;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaGroup;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItem;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemFormatInfo;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.NotificationState;
-import com.liskovsoft.mediaserviceinterfaces.yt.data.PlaylistInfo;
+
+import com.liskovsoft.mediaserviceinterfaces.ContentService;
+import com.liskovsoft.mediaserviceinterfaces.MediaItemService;
+import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
+import com.liskovsoft.mediaserviceinterfaces.NotificationsService;
+import com.liskovsoft.mediaserviceinterfaces.SignInService;
+import com.liskovsoft.mediaserviceinterfaces.SignInService.OnAccountChange;
+import com.liskovsoft.mediaserviceinterfaces.data.Account;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.NotificationState;
+import com.liskovsoft.mediaserviceinterfaces.data.PlaylistInfo;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
@@ -28,13 +28,13 @@ import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MediaServiceManager implements OnAccountChange {
-    private static final String TAG = SettingsManager.class.getSimpleName();
+    private static final String TAG = MediaServiceManager.class.getSimpleName();
     private static MediaServiceManager sInstance;
     private final MediaItemService mItemService;
     private final ContentService mContentService;
@@ -42,12 +42,10 @@ public class MediaServiceManager implements OnAccountChange {
     private final NotificationsService mNotificationsService;
     private Disposable mMetadataAction;
     private Disposable mUploadsAction;
-    private Disposable mSignCheckAction;
     private Disposable mRowsAction;
     private Disposable mSubscribedChannelsAction;
     private Disposable mFormatInfoAction;
     private Disposable mPlaylistGroupAction;
-    private Disposable mAccountListAction;
     private Disposable mPlaylistInfosAction;
     private Disposable mHistoryAction;
     private static final int MIN_GRID_GROUP_SIZE = 13;
@@ -55,7 +53,7 @@ public class MediaServiceManager implements OnAccountChange {
     private static final int MIN_SCALED_GRID_GROUP_SIZE = 35;
     private static final int MIN_SCALED_ROW_GROUP_SIZE = 10;
     private final Map<Integer, Pair<Integer, Long>> mContinuations = new HashMap<>();
-    private final List<AccountChangeListener> mAccountListeners = new ArrayList<>();
+    private final List<AccountChangeListener> mAccountListeners = new CopyOnWriteArrayList<>();
 
     public interface OnMetadata {
         void onMetadata(MediaItemMetadata metadata);
@@ -83,6 +81,10 @@ public class MediaServiceManager implements OnAccountChange {
 
     public interface AccountChangeListener {
         void onAccountChanged(Account account);
+    }
+
+    public interface OnError {
+        void onError(Throwable error);
     }
 
     private MediaServiceManager() {
@@ -184,7 +186,7 @@ public class MediaServiceManager implements OnAccountChange {
     public void loadSubscribedChannels(OnMediaGroup onMediaGroup) {
         RxHelper.disposeActions(mSubscribedChannelsAction);
 
-        Observable<MediaGroup> observable = mContentService.getSubscribedChannelsByUpdateObserve();
+        Observable<MediaGroup> observable = mContentService.getSubscribedChannelsByNewContentObserve();
 
         mSubscribedChannelsAction = observable
                 .subscribe(
@@ -262,13 +264,7 @@ public class MediaServiceManager implements OnAccountChange {
     }
 
     public void loadAccounts(OnAccountList onAccountList) {
-        RxHelper.disposeActions(mAccountListAction);
-
-        mAccountListAction = mSingInService.getAccountsObserve()
-                .subscribe(
-                        onAccountList::onAccountList,
-                        error -> Log.e(TAG, "Get signed accounts error: %s", error.getMessage())
-                );
+        onAccountList.onAccountList(mSingInService.getAccounts());
     }
 
     public void authCheck(Runnable onSuccess, Runnable onError) {
@@ -276,28 +272,19 @@ public class MediaServiceManager implements OnAccountChange {
             return;
         }
 
-        RxHelper.disposeActions(mSignCheckAction);
-
-        mSignCheckAction = mSingInService.isSignedObserve()
-                .subscribe(
-                        isSigned -> {
-                            if (isSigned) {
-                                if (onSuccess != null) {
-                                    onSuccess.run();
-                                }
-                            } else {
-                                if (onError != null) {
-                                    onError.run();
-                                }
-                            }
-                        },
-                        error -> Log.e(TAG, "Sign check error: %s", error.getMessage())
-                );
-
+        if (mSingInService.isSigned()) {
+            if (onSuccess != null) {
+                onSuccess.run();
+            }
+        } else {
+            if (onError != null) {
+                onError.run();
+            }
+        }
     }
 
     public void disposeActions() {
-        RxHelper.disposeActions(mMetadataAction, mUploadsAction, mSignCheckAction, mRowsAction, mSubscribedChannelsAction);
+        RxHelper.disposeActions(mMetadataAction, mUploadsAction, mRowsAction, mSubscribedChannelsAction);
     }
 
     /**
@@ -402,8 +389,39 @@ public class MediaServiceManager implements OnAccountChange {
         }
     }
 
-    public void setNotificationState(NotificationState state) {
-        RxHelper.execute(mNotificationsService.setNotificationStateObserve(state));
+    public void setNotificationState(NotificationState state, OnError onError) {
+        RxHelper.execute(mNotificationsService.setNotificationStateObserve(state), onError::onError);
+    }
+
+    public void removeFromWatchLaterPlaylist(Video video) {
+        removeFromWatchLaterPlaylist(video, null);
+    }
+
+    public void removeFromWatchLaterPlaylist(Video video, Runnable onSuccess) {
+        if (video == null || !mSingInService.isSigned()) {
+            return;
+        }
+
+        Disposable playlistsInfoAction = mItemService.getPlaylistsInfoObserve(video.videoId)
+                .subscribe(
+                        videoPlaylistInfos -> {
+                            PlaylistInfo watchLater = videoPlaylistInfos.get(0);
+
+                            if (watchLater.isSelected()) {
+                                Observable<Void> editObserve = mItemService.removeFromPlaylistObserve(watchLater.getPlaylistId(), video.videoId);
+
+                                RxHelper.execute(editObserve, () -> {
+                                    if (onSuccess != null) {
+                                        onSuccess.run();
+                                    }
+                                });
+                            }
+                        },
+                        error -> {
+                            // Fallback to something on error
+                            Log.e(TAG, "Get playlists error: %s", error.getMessage());
+                        }
+                );
     }
 
     public void addAccountListener(AccountChangeListener listener) {

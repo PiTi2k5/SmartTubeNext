@@ -27,6 +27,7 @@
     <string name="frame_rate_correction">Виправляти fps:\n%s</string>
     <string name="category_background_playback">Фонове відтворення</string>
     <string name="not_implemented">Поки не зроблено</string>
+    <string name="not_supported_by_device">Пристрій не підтримує цю функцію</string>
     <string name="option_background_playback_off">Відключено</string>
     <string name="option_background_playback_pip">Картинка в картинці</string>
     <string name="option_background_playback_only_audio">Тільки аудіо</string>
@@ -296,6 +297,7 @@
     <string name="upload_date_last_hour">Остання година</string>
     <string name="focus_on_search_results">Автофокусування на результатах пошуку</string>
     <string name="context_menu">Контекстне меню</string>
+    <string name="context_menu_sorting">Сортування контекстного меню</string>
     <string name="add_remove_from_recent_playlist">Додати/Видалити з недавнього плейлиста</string>
     <string name="hide_settings_section">Приховувати розділ Налаштування (небезпечно!)</string>
     <string name="volume">Гучність %s%%</string>
@@ -346,6 +348,7 @@
     <string name="hide_shorts_from_home">Приховувати короткі відео з Головної</string>
     <string name="finish_on_disconnect">Завершувати застосунок після відключення телефону/планшету</string>
     <string name="update_error">Помилка оновлення</string>
+    <string name="hide_shorts_from_search">Приховувати короткі відео з Пошуку</string>
     <string name="hide_shorts_from_history">Приховувати короткі відео з Історії</string>
     <string name="hide_shorts_from_trending">Приховувати короткі відео з Трендів</string>
     <string name="disable_screensaver">Вимкнути скрінсейвер</string>
@@ -472,6 +475,7 @@
     <string name="skip_24_rate">Пропускати 24fps формати (виправлення режиму real cinema?)</string>
     <string name="skip_shorts">Пропускати Shorts</string>
     <string name="player_disable_suggestions">Вимкнути рекомендації</string>
+    <string name="suggestions">Рекомендації</string>
     <string name="feedback">Зворотній зв`язок</string>
     <string name="sources">Вихідний код</string>
     <string name="releases">Релізи</string>
@@ -583,7 +587,7 @@
     <string name="old_update_notifications">Старий вигляд сповіщень про оновлення</string>
     <string name="dialog_notification">Повідомляти про оновлення вспливаючим діалогом</string>
     <string name="mark_as_watched">Відмітити як переглянуте</string>
-    <string name="player_ui_animations">Увімкнути анімацію панелі керування</string>
+    <string name="player_ui_animations">Увімкнути анімацію інтерфейсу плеєра</string>
     <string name="player_likes_count">Відображати кількість лайків/діслайків</string>
     <string name="sorting_alphabetically2">За абеткою (швидко, анімовані прев\'ю)</string>
     <string name="sorting_default">За замовчуванням (швидко, анімовані прев\'ю)</string>
@@ -676,4 +680,7 @@
     <string name="rename_group">Перейменувати групу підписок</string>
     <string name="screen_dimming_amount">Величина затемнення екрана</string>
     <string name="screen_dimming_timeout">Тайм-аут затемнення екрана</string>
+    <string name="playlists_rows">Відображати розділ Плейлисти у вигляді рядків</string>
+    <string name="import_subscriptions_group">Імпорт</string>
+    <string name="my_videos">Мої відео</string>
 </resources>

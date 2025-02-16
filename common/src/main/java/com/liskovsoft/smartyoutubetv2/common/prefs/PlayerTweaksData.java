@@ -2,10 +2,9 @@ package com.liskovsoft.smartyoutubetv2.common.prefs;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.os.Build.VERSION;
+
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
-import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
@@ -95,12 +94,11 @@ public class PlayerTweaksData implements ProfileChangeListener {
     private boolean mIsPlayerAutoVolumeEnabled;
     private boolean mIsPlayerGlobalFocusEnabled;
     private boolean mIsUnsafeAudioFormatsEnabled;
-    private boolean mIsHighBitrateFormatsEnabled;
     private boolean mIsLoopShortsEnabled;
     private boolean mIsQuickSkipShortsEnabled;
     private boolean mIsQuickSkipVideosEnabled;
     private boolean mIsOculusQuestFixEnabled;
-    private boolean mIsNetworkErrorFixingDisabled;
+    private boolean mIsPersistentAntiBotFixEnabled;
 
     private PlayerTweaksData(Context context) {
         mPrefs = AppPrefs.instance(context);
@@ -394,6 +392,15 @@ public class PlayerTweaksData implements ProfileChangeListener {
         persistData();
     }
 
+    public boolean isPersistentAntiBotFixEnabled() {
+        return mIsPersistentAntiBotFixEnabled;
+    }
+
+    public void enablePersistentAntiBotFix(boolean enable) {
+        mIsPersistentAntiBotFixEnabled = enable;
+        persistData();
+    }
+
     public void enableButtonLongClick(boolean enable) {
         mIsButtonLongClickEnabled = enable;
         persistData();
@@ -576,15 +583,6 @@ public class PlayerTweaksData implements ProfileChangeListener {
         return MediaServiceData.instance().isFormatEnabled(MediaServiceData.FORMATS_EXTENDED_HLS);
     }
 
-    public void disableNetworkErrorFixing(boolean disable) {
-        mIsNetworkErrorFixingDisabled = disable;
-        persistData();
-    }
-
-    public boolean isNetworkErrorFixingDisabled() {
-        return mIsNetworkErrorFixingDisabled;
-    }
-
     public void preferIPv4Dns(boolean prefer) {
         GlobalPreferences.instance(mPrefs.getContext()).preferIPv4Dns(prefer);
     }
@@ -625,7 +623,8 @@ public class PlayerTweaksData implements ProfileChangeListener {
         mIsSpeedButtonOldBehaviorEnabled = Helpers.parseBoolean(split, 23, false);
         mIsButtonLongClickEnabled = Helpers.parseBoolean(split, 24, true);
         mIsLongSpeedListEnabled = Helpers.parseBoolean(split, 25, true);
-        mPlayerDataSource = Helpers.parseInt(split, 26, Utils.skipCronet() ? PLAYER_DATA_SOURCE_DEFAULT : PLAYER_DATA_SOURCE_CRONET);
+        //mPlayerDataSource = Helpers.parseInt(split, 26, Utils.skipCronet() ? PLAYER_DATA_SOURCE_DEFAULT : PLAYER_DATA_SOURCE_CRONET);
+        mPlayerDataSource = Helpers.parseInt(split, 26, PLAYER_DATA_SOURCE_DEFAULT);
         mUnlockAllFormats = Helpers.parseBoolean(split, 27, false);
         mIsDashUrlStreamsForced = Helpers.parseBoolean(split, 28, false);
         mIsSonyFrameDropFixEnabled = Helpers.parseBoolean(split, 29, false);
@@ -643,18 +642,19 @@ public class PlayerTweaksData implements ProfileChangeListener {
         mIsPlayerAutoVolumeEnabled = Helpers.parseBoolean(split, 40, true);
         mIsPlayerGlobalFocusEnabled = Helpers.parseBoolean(split, 41, true);
         mIsUnsafeAudioFormatsEnabled = Helpers.parseBoolean(split, 42, true);
-        mIsHighBitrateFormatsEnabled = Helpers.parseBoolean(split, 43, false);
+        //mIsHighBitrateFormatsEnabled = Helpers.parseBoolean(split, 43, false);
         mIsLoopShortsEnabled = Helpers.parseBoolean(split, 44, true);
         mIsQuickSkipShortsEnabled = Helpers.parseBoolean(split, 45, true);
-        mIsRememberPositionOfLiveVideosEnabled = Helpers.parseBoolean(split, 46, false);
+        mIsRememberPositionOfLiveVideosEnabled = Helpers.parseBoolean(split, 46, true);
         mIsOculusQuestFixEnabled = Helpers.parseBoolean(split, 47, Utils.isOculusQuest());
         // mPlayerDataSource was here
         // Cronet is buffering too, unfortunately, so leave the default as a safest method (e.g. for "strtarmenia")
         // mPlayerDataSource = Helpers.parseInt(split, 48, PLAYER_DATA_SOURCE_DEFAULT);
         mIsExtraLongSpeedListEnabled = Helpers.parseBoolean(split, 49, false);
         mIsQuickSkipVideosEnabled = Helpers.parseBoolean(split, 50, false);
-        mIsNetworkErrorFixingDisabled = Helpers.parseBoolean(split, 51, false);
+        //mIsNetworkErrorFixingDisabled = Helpers.parseBoolean(split, 51, false);
         mIsCommentsPlacedLeft = Helpers.parseBoolean(split, 52, false);
+        mIsPersistentAntiBotFixEnabled = Helpers.parseBoolean(split, 53, false);
 
         updateDefaultValues();
     }
@@ -671,8 +671,8 @@ public class PlayerTweaksData implements ProfileChangeListener {
                 mIsDashUrlStreamsForced, mIsSonyFrameDropFixEnabled, mIsBufferOnStreamsDisabled, mIsSectionPlaylistEnabled,
                 mIsScreenOffTimeoutEnabled, mScreenOffTimeoutSec, mIsUIAnimationsEnabled, mIsLikesCounterEnabled, mIsChapterNotificationEnabled,
                 mScreenOffDimmingPercents, mIsBootScreenOffEnabled, mIsPlayerUiOnNextEnabled, mIsPlayerAutoVolumeEnabled, mIsPlayerGlobalFocusEnabled,
-                mIsUnsafeAudioFormatsEnabled, mIsHighBitrateFormatsEnabled, mIsLoopShortsEnabled, mIsQuickSkipShortsEnabled, mIsRememberPositionOfLiveVideosEnabled,
-                mIsOculusQuestFixEnabled, null, mIsExtraLongSpeedListEnabled, mIsQuickSkipVideosEnabled, mIsNetworkErrorFixingDisabled, mIsCommentsPlacedLeft
+                mIsUnsafeAudioFormatsEnabled, null, mIsLoopShortsEnabled, mIsQuickSkipShortsEnabled, mIsRememberPositionOfLiveVideosEnabled,
+                mIsOculusQuestFixEnabled, null, mIsExtraLongSpeedListEnabled, mIsQuickSkipVideosEnabled, null, mIsCommentsPlacedLeft, mIsPersistentAntiBotFixEnabled
                 ));
     }
 
@@ -686,16 +686,6 @@ public class PlayerTweaksData implements ProfileChangeListener {
         // Replace old button with new one
         if (isPlayerButtonEnabled(PLAYER_BUTTON_SCREEN_OFF)) {
             enablePlayerButton(PLAYER_BUTTON_SCREEN_OFF_TIMEOUT);
-        }
-
-        if (mIsHighBitrateFormatsEnabled) {
-            mIsHighBitrateFormatsEnabled = false;
-            MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_EXTENDED_HLS, true);
-        }
-
-        if (GlobalPreferences.sInstance.isExtendedHlsFormatsEnabled()) {
-            GlobalPreferences.sInstance.enableExtendedHlsFormats(false);
-            MediaServiceData.instance().enableFormat(MediaServiceData.FORMATS_EXTENDED_HLS, true);
         }
     }
 

@@ -4,7 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 
-import com.liskovsoft.mediaserviceinterfaces.yt.data.MediaItemMetadata;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.BasePlayerController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.AutoFrameRateController;
@@ -95,6 +95,10 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
             onNewVideo(mPendingVideo);
             mPendingVideo = null;
         }
+    }
+
+    public boolean hasPendingVideo() {
+        return mPendingVideo != null;
     }
 
     public void openVideo(Video video) {
@@ -215,8 +219,7 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
     }
 
     public PlaybackView getPlayer() {
-        //return getView();
-        return mPlayer.get();
+        return mPlayer.get(); // return view even if the one is destroyed
     }
 
     public Activity getActivity() {
@@ -345,6 +348,11 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
     @Override
     public void onSeekEnd() {
         process(PlayerEventListener::onSeekEnd);
+    }
+
+    @Override
+    public void onSeekPositionChanged(long positionMs) {
+        process(listener -> listener.onSeekPositionChanged(positionMs));
     }
 
     @Override

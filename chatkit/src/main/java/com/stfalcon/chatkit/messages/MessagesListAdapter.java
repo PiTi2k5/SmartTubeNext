@@ -20,6 +20,8 @@ import android.annotation.SuppressLint;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.text.Spannable;
 import android.text.method.LinkMovementMethod;
 import android.util.SparseArray;
@@ -29,8 +31,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.LayoutRes;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.stfalcon.chatkit.R;
 import com.stfalcon.chatkit.commons.DebouncedOnClickListener;
 import com.stfalcon.chatkit.commons.ImageLoader;
@@ -766,7 +772,27 @@ public class MessagesListAdapter<MESSAGE extends IMessage>
             // Change background of the focused message
             // NOTE: you can have only one focus listener
             View bubble = v.findViewById(R.id.bubble);
-            bubble.setBackgroundResource(hasFocus ? R.drawable.shape_incoming_message_focused : R.drawable.shape_incoming_message);
+            //bubble.setBackgroundResource(hasFocus ? R.drawable.shape_incoming_message_focused : R.drawable.shape_incoming_message);
+
+            // Save the current padding (API 19 fix)
+            int paddingLeft = bubble.getPaddingLeft();
+            int paddingTop = bubble.getPaddingTop();
+            int paddingRight = bubble.getPaddingRight();
+            int paddingBottom = bubble.getPaddingBottom();
+
+            if (hasFocus) {
+                // Invert text and bg color
+                Drawable originalBackground = messagesListStyle.getIncomingBubbleDrawable();
+                Drawable shapeBackground = messagesListStyle.getIncomingBubbleSelectedDrawable();
+                bubble.setBackground(new LayerDrawable(new Drawable[]{originalBackground, shapeBackground}));
+            } else {
+                // Revert to original
+                Drawable originalBackground = messagesListStyle.getIncomingBubbleDrawable();
+                bubble.setBackground(originalBackground);
+            }
+
+            // Restore the padding (API 19 fix)
+            bubble.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
 
             if (hasFocus) {
                 notifyMessageViewFocused(v, wrapper.item);

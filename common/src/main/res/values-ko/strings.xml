@@ -675,4 +675,20 @@
   <string name="disable_network_error_fixing">자동 네트워크 오류 수정 비활성화</string>
   <string name="disable_network_error_fixing_desc">VPN을 사용하는 경우 이 옵션을 활성화해야 할 수도 있음</string>
   <string name="recommended">추천</string>
+  <string name="video_buffer_size_highest">가장 높음</string>
+  <string name="unpin_group_from_sidebar">구독 그룹 제거</string>
+  <string name="place_comments_left">왼쪽에 댓글 배치</string>
+  <string name="add_to_subscriptions_group">구독 그룹 추가/제거</string>
+  <string name="new_subscriptions_group">새 그룹</string>
+  <string name="rename_group">구독 그룹 이름 바꾸기</string>
+  <string name="screen_dimming_amount">화면 어둡기 양</string>
+  <string name="screen_dimming_timeout">화면 어둡기 시간 초과</string>
+  <string name="playlists_rows">재생목록 섹션을 행으로 표시</string>
+  <string name="not_supported_by_device">해당 장치는 이 기능을 지원하지 않음</string>
+  <string name="suggestions">제안</string>
+  <string name="context_menu_sorting">상황에 맞는 메뉴 정렬</string>
+  <string name="hide_shorts_from_search">검색 결과에서 쇼츠 숨기기</string>
+  <string name="import_subscriptions_group">가져오기</string>
+  <string name="lb_playback_controls_closed_captioning_disable">폐쇄 자막 넣기 비활성화</string>
+  <string name="lb_playback_controls_closed_captioning_enable">폐쇄 자막 넣기 활성화</string>
 </resources>

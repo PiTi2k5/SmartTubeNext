@@ -27,6 +27,7 @@
     <string name="frame_rate_correction">Fps düzeltme:\n%s</string>
     <string name="category_background_playback">Arka planda oynatma</string>
     <string name="not_implemented">Uygulanmadı</string>
+    <string name="not_supported_by_device">Cihaz bu özelliği desteklemiyor</string>
     <string name="option_background_playback_off">Devre dışı</string>
     <string name="option_background_playback_pip">Resim içinde resim</string>
     <string name="option_background_playback_only_audio">Sadece ses</string>
@@ -296,6 +297,7 @@
     <string name="upload_date_last_hour">Son bir saat</string>
     <string name="focus_on_search_results">Arama sonuçlarına otomatik odaklan</string>
     <string name="context_menu">İçerik menüsü</string>
+    <string name="context_menu_sorting">İçerik menüsü sıralama</string>
     <string name="add_remove_from_recent_playlist">Son oynatma listesine Ekle/Kaldır</string>
     <string name="hide_settings_section">Ayarlar bölümünü gizle (tehlikeli!)</string>
     <string name="volume">Ses %s%%</string>
@@ -350,6 +352,7 @@
     <string name="hide_shorts_from_home">Shortsları Ana Sayfa\'da gizle</string>
     <string name="finish_on_disconnect">Telefon bağlantısı kesildiğinde uygulamayı sonlandır</string>
     <string name="update_error">Güncelleme hatası</string>
+    <string name="hide_shorts_from_search">Shortsları Arama\'te gizle</string>
     <string name="hide_shorts_from_history">Shortsları Geçmiş\'te gizle</string>
     <string name="hide_shorts_from_trending">Shortsları Trendler\'de gizle</string>
     <string name="disable_screensaver">Ekran koruyucuyu devre dışı bırak</string>
@@ -480,6 +483,7 @@
     <string name="skip_24_rate">24 fps biçimlerini atla (gerçek sinema modu düzeltmesi\?)</string>
     <string name="skip_shorts">Shortsları atla</string>
     <string name="player_disable_suggestions">Önerileri devre dışı bırak</string>
+    <string name="suggestions">Önerileri</string>
     <string name="feedback">Geri bildirim</string>
     <string name="sources">Kaynaklar</string>
     <string name="releases">Sürümler</string>
@@ -675,7 +679,7 @@
     <string name="without_picture">Resimsiz</string>
     <string name="video_disabled">Video devre dışı</string>
     <string name="applying_fix">Oynatıcıyı kapatmayın. Düzeltme uygulanıyor...</string>
-    <string name="hide_mixes">Karışımları Mixes</string>
+    <string name="hide_mixes">Karışımları gizle</string>
     <string name="player_global_focus_desc">Bu özellik, oynatıcı düğmeleri sıraları arasında gezinirken hangi oynatıcı düğmesinin odaklanacağını etkiler</string>
     <string name="disable_network_error_fixing">Otomatik ağ hatası düzeltmeyi devre dışı bırak</string>
     <string name="disable_network_error_fixing_desc">Bir VPN kullanıyorsanız muhtemelen bu seçeneği etkinleştirmeniz gerekir</string>
@@ -685,4 +689,9 @@
     <string name="rename_group">Abonelik grubunun yeniden adlandır</string>
     <string name="screen_dimming_amount">Ekran karartma miktarı</string>
     <string name="screen_dimming_timeout">Ekran karartma zaman aşımı</string>
+    <string name="playlists_rows">Oynatma listelerini satır olarak göster</string>
+    <string name="import_subscriptions_group">Içe aktar</string>
+    <string name="lb_playback_controls_closed_captioning_disable">Altyazıyı Devre Dışı Bırak</string>
+    <string name="lb_playback_controls_closed_captioning_enable">Altyazıyı Aktifleştir</string>
+    <string name="my_videos">Videolarım</string>
 </resources>

@@ -7,6 +7,7 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -133,6 +134,11 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         mPlaybackPresenter.setView(this);
         mExoPlayerController = new ExoPlayerController(getContext(), mPlaybackPresenter);
 
+        // Fix open previous video
+        if (mPlaybackPresenter.hasPendingVideo()) {
+            mSelectedVideoId = null;
+        }
+
         initPresenters();
         setupEventListeners();
     }
@@ -248,8 +254,21 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     }
 
     private void applyTickle(MotionEvent event) {
-        if (event.getAxisValue(MotionEvent.AXIS_X) < 100) { // reserve left area for the back gesture
+        int gestureAreaWidthPx = 100;
+
+        // Reserve left area for gestures
+        if (event.getAxisValue(MotionEvent.AXIS_X) < gestureAreaWidthPx) {
             return;
+        }
+
+        // Reserve right area for gestures
+        if (getActivity() != null) {
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
+            if (event.getAxisValue(MotionEvent.AXIS_X) > (displayMetrics.widthPixels - gestureAreaWidthPx)) {
+                return;
+            }
         }
 
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -285,6 +304,11 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             // Fix partially disappeared buttons after exit from PIP???
             notifyPlaybackRowChanged();
         }
+    }
+
+    @Override
+    protected void onSeekPositionChanged(long positionMs) {
+        mPlaybackPresenter.onSeekPositionChanged(positionMs);
     }
 
     public void skipToNext() {
@@ -541,10 +565,10 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
             MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
 
-            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, getVideo().getTitle());
-            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, getVideo().getTitle());
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, getVideo().getPlayerTitle());
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, getVideo().getPlayerTitle());
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, getVideo().getAuthor());
-            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, getVideo().getSecondTitle());
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, getVideo().getPlayerSubtitle());
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, getVideo().getCardImageUrl());
             metadataBuilder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDurationMs());
 
@@ -829,8 +853,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
 
         if (mPlayerGlue != null && video != null) {
             // Preserve player formatting
-            mPlayerGlue.setTitle(video.getTitle() != null ? video.getTitle() : "...");
-            mPlayerGlue.setSubtitle(video.getSecondTitle() != null ? createSecondTitle(video) : "...");
+            mPlayerGlue.setTitle(video.getPlayerTitle() != null ? video.getPlayerTitle() : "...");
+            mPlayerGlue.setSubtitle(video.getPlayerSubtitle() != null ? createSubtitle(video) : "...");
             mPlayerGlue.setVideo(video);
         }
     }
@@ -845,8 +869,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
         mBackgroundManager.showBackgroundColor(colorResId);
     }
 
-    private CharSequence createSecondTitle(Video video) {
-        CharSequence result = video.getSecondTitle();
+    private CharSequence createSubtitle(Video video) {
+        CharSequence result = video.getPlayerSubtitle();
 
         if (getContext() != null && video.isLive) {
             result = TextUtils.concat( result, " ", Video.TERTIARY_TEXT_DELIM, " ", Utils.color(getContext().getString(R.string.badge_live), ContextCompat.getColor(getContext(), R.color.red)));
@@ -1340,8 +1364,9 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     @Override
     public void setSeekPreviewTitle(String title) {
         if (mPlayerGlue != null) {
-            mPlayerGlue.setSeekPreviewTitle(title);
-            mPlayerGlue.setBody(title);
+            mPlayerGlue.setSeekPreviewTitle(title); // seeking ui
+            // NOTE: setBody re-renders ui on change
+            //mPlayerGlue.setBody(title); // full ui
         }
     }
 
