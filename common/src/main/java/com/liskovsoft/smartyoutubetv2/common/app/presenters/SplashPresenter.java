@@ -4,9 +4,9 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 
+import com.liskovsoft.mediaserviceinterfaces.data.Account;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.GlobalConstants;
-import com.liskovsoft.sharedutils.helpers.AppInfoHelpers;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
@@ -99,7 +99,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             initProxy();
             initVideoStateService();
             initStreamReminderService();
-            Utils.initVolume(getContext());
+            //Utils.initVolume(getContext());
         }
     }
 
@@ -115,9 +115,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
     private void runBackgroundTasks() {
         YouTubeServiceManager.instance().refreshCacheIfNeeded(); // warm up player engine
-        if (PlayerTweaksData.instance(getContext()).isPersistentAntiBotFixEnabled()) {
-            YouTubeServiceManager.instance().applyAntiBotFix();
-        }
+        YouTubeServiceManager.instance().applyAntiBotFix();
         enableHistoryIfNeeded();
         Utils.updateChannels(getContext());
         GDriveBackupWorker.schedule(getContext());
@@ -187,26 +185,6 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         }
     }
 
-    private void clearCache2() {
-        if (getContext() != null) {
-            // 1) Remove downloaded apks
-            // 2) Setup language
-            ViewManager.instance(getContext()).clearCaches();
-        }
-    }
-
-    private void clearCache() {
-        if (getContext() != null) {
-            int versionCode = AppInfoHelpers.getAppVersionCode(getContext());
-            if (GeneralData.instance(getContext()).getVersionCode() != versionCode) {
-                GeneralData.instance(getContext()).setVersionCode(versionCode);
-
-                //FileHelpers.deleteCache(getContext());
-                ViewManager.instance(getContext()).clearCaches();
-            }
-        }
-    }
-
     private void enableHistoryIfNeeded() {
         // Account history might be turned off (common issue).
         GeneralData generalData = GeneralData.instance(getContext());
@@ -227,6 +205,22 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     }
 
     private void initIntentChain() {
+        mIntentChain.add(intent -> {
+            String accountName = IntentExtractor.extractAccountName(intent);
+
+            if (accountName != null) {
+                List<Account> accounts = getSignInService().getAccounts();
+                for (Account account : accounts) {
+                    if (Helpers.equals(account.getName(), accountName)) {
+                        AccountSelectionPresenter.instance(getContext()).selectAccount(account);
+                        break;
+                    }
+                }
+            }
+
+            return false;
+        });
+
         mIntentChain.add(intent -> {
             String searchText = IntentExtractor.extractSearchText(intent);
 
@@ -309,7 +303,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             }
 
             if (sectionId != -1) {
-                ViewManager.instance(getContext()).startDefaultView(); // Nvidia Shield fix
+                getViewManager().startDefaultView(); // Nvidia Shield fix
                 BrowsePresenter.instance(getContext()).selectSection(sectionId);
 
                 return true;
@@ -320,7 +314,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
         // Should come last
         mIntentChain.add(intent -> {
-            ViewManager viewManager = ViewManager.instance(getContext());
+            ViewManager viewManager = getViewManager();
             viewManager.startDefaultView();
 
             // For debug purpose when using ATV bridge.
@@ -348,7 +342,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         String password = GeneralData.instance(getContext()).getMasterPassword();
 
         // No passwd or the app already started
-        if (password == null || ViewManager.instance(getContext()).getTopView() != null) {
+        if (password == null || getViewManager().getTopView() != null) {
             onSuccess.run();
             getView().finishView(); // critical part, fix black screen on app exit
         } else {
@@ -370,7 +364,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     }
 
     private void enablePlayerOnlyModeIfNeeded(Intent intent) {
-        ViewManager viewManager = ViewManager.instance(getContext());
+        ViewManager viewManager = getViewManager();
 
         boolean isInternalIntent = intent.getBooleanExtra(GlobalConstants.INTERNAL_INTENT, false);
 

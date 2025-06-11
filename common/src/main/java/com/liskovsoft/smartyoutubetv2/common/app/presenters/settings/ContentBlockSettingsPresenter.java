@@ -12,7 +12,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.ContentBlockData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
@@ -54,7 +53,7 @@ public class ContentBlockSettingsPresenter extends BasePresenter<Void> {
     private void appendSponsorBlockSwitch(AppDialogPresenter settingsPresenter) {
         Video video = null;
 
-        if (ViewManager.instance(getContext()).getTopView() == PlaybackView.class) {
+        if (getViewManager().getTopView() == PlaybackView.class) {
             video = PlaybackPresenter.instance(getContext()).getVideo();
         }
 
@@ -139,6 +138,10 @@ public class ContentBlockSettingsPresenter extends BasePresenter<Void> {
     private void appendMiscSection(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
+        options.add(UiOptionItem.from(getContext().getString(R.string.paid_content_notification),
+                optionItem -> mContentBlockData.enablePaidContentNotification(optionItem.isSelected()),
+                mContentBlockData.isPaidContentNotificationEnabled()));
+
         options.add(UiOptionItem.from(getContext().getString(R.string.skip_each_segment_once),
                 optionItem -> mContentBlockData.enableDontSkipSegmentAgain(optionItem.isSelected()),
                 mContentBlockData.isDontSkipSegmentAgainEnabled()));
@@ -154,7 +157,7 @@ public class ContentBlockSettingsPresenter extends BasePresenter<Void> {
     private void appendExcludeChannelButton(AppDialogPresenter settingsPresenter) {
         Video video = PlaybackPresenter.instance(getContext()).getVideo();
 
-        if (video == null || ViewManager.instance(getContext()).getTopView() != PlaybackView.class) {
+        if (video == null || getViewManager().getTopView() != PlaybackView.class) {
             return;
         }
 

@@ -19,6 +19,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
+import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     private final SearchData mSearchData;
     private final GeneralData mGeneralData;
     private final SidebarService mSidebarService;
+    private final MediaServiceData mMediaServiceData;
     private boolean mRestartApp;
 
     private PlayerSettingsPresenter(Context context) {
@@ -39,6 +41,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         mSearchData = SearchData.instance(context);
         mGeneralData = GeneralData.instance(context);
         mSidebarService = SidebarService.instance(context);
+        mMediaServiceData = MediaServiceData.instance();
     }
 
     public static PlayerSettingsPresenter instance(Context context) {
@@ -195,6 +198,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 {R.string.auto_frame_rate, PlayerTweaksData.PLAYER_BUTTON_AFR},
                 {R.string.action_sound_off, PlayerTweaksData.PLAYER_BUTTON_SOUND_OFF},
                 {R.string.video_rotate, PlayerTweaksData.PLAYER_BUTTON_VIDEO_ROTATE},
+                {R.string.video_flip, PlayerTweaksData.PLAYER_BUTTON_VIDEO_FLIP},
                 {R.string.open_chat, PlayerTweaksData.PLAYER_BUTTON_CHAT},
                 {R.string.content_block_provider, PlayerTweaksData.PLAYER_BUTTON_CONTENT_BLOCK},
                 {R.string.seek_interval, PlayerTweaksData.PLAYER_BUTTON_SEEK_INTERVAL},
@@ -235,33 +239,18 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     private void appendDeveloperCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
-        options.add(UiOptionItem.from("Premium users only. Fix for incomplete video format list",
-                option -> MediaServiceData.instance().enablePremiumFix(option.isSelected()),
-                MediaServiceData.instance().isPremiumFixEnabled()));
-
-        options.add(UiOptionItem.from("Unlock more subtitles",
-                option -> MediaServiceData.instance().unlockMoreSubtitles(option.isSelected()),
-                MediaServiceData.instance().isMoreSubtitlesUnlocked()));
-
-        options.add(UiOptionItem.from("Playback buffering fix",
-                option -> {
-                    mPlayerTweaksData.enablePersistentAntiBotFix(option.isSelected());
-                    mRestartApp = true;
-                },
-                mPlayerTweaksData.isPersistentAntiBotFixEnabled()));
+        options.add(UiOptionItem.from(getContext().getString(R.string.disable_network_error_fixing),
+                getContext().getString(R.string.disable_network_error_fixing_desc),
+                option -> mPlayerTweaksData.disableNetworkErrorFixing(option.isSelected()),
+                mPlayerTweaksData.isNetworkErrorFixingDisabled()));
 
         // Oculus Quest fix: back button not closing the activity
-        options.add(UiOptionItem.from("Oculus Quest fix",
+        options.add(UiOptionItem.from(getContext().getString(R.string.oculus_quest_fix),
                 option -> {
                     mPlayerTweaksData.enableOculusQuestFix(option.isSelected());
                     mRestartApp = true;
                 },
                 mPlayerTweaksData.isOculusQuestFixEnabled()));
-
-        //options.add(UiOptionItem.from(getContext().getString(R.string.disable_network_error_fixing),
-        //        getContext().getString(R.string.disable_network_error_fixing_desc),
-        //        option -> mPlayerTweaksData.disableNetworkErrorFixing(option.isSelected()),
-        //        mPlayerTweaksData.isNetworkErrorFixingDisabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.prefer_ipv4),
                 getContext().getString(R.string.prefer_ipv4_desc),
@@ -508,13 +497,17 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_section_playlist),
-                option -> mPlayerTweaksData.enableSectionPlaylist(option.isSelected()),
-                mPlayerTweaksData.isSectionPlaylistEnabled()));
+        options.add(UiOptionItem.from(getContext().getString(R.string.player_audio_focus),
+                option -> mPlayerTweaksData.enableAudioFocus(option.isSelected()),
+                mPlayerTweaksData.isAudioFocusEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_auto_volume),
                 option -> mPlayerTweaksData.enablePlayerAutoVolume(option.isSelected()),
                 mPlayerTweaksData.isPlayerAutoVolumeEnabled()));
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.player_section_playlist),
+                option -> mPlayerTweaksData.enableSectionPlaylist(option.isSelected()),
+                mPlayerTweaksData.isSectionPlaylistEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_chapter_notification),
                 option -> mPlayerTweaksData.enableChapterNotification(option.isSelected()),
@@ -529,7 +522,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 option -> mSearchData.enableTempBackgroundMode(option.isSelected()),
                 mSearchData.isTempBackgroundModeEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.app_double_back_exit) + " " + getContext().getString(R.string.player_exit_shortcut),
+        options.add(UiOptionItem.from(getContext().getString(R.string.player_exit_shortcut) + ": " + getContext().getString(R.string.app_double_back_exit),
                 option -> mGeneralData.setPlayerExitShortcut(option.isSelected() ? GeneralData.EXIT_DOUBLE_BACK : GeneralData.EXIT_SINGLE_BACK),
                 mGeneralData.getPlayerExitShortcut() == GeneralData.EXIT_DOUBLE_BACK));
 
@@ -594,8 +587,8 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_global_focus),
                 getContext().getString(R.string.player_global_focus_desc),
-                option -> mPlayerTweaksData.enablePlayerGlobalFocus(option.isSelected()),
-                mPlayerTweaksData.isPlayerGlobalFocusEnabled()));
+                option -> mPlayerTweaksData.enableSimplePlayerNavigation(option.isSelected()),
+                mPlayerTweaksData.isSimplePlayerNavigationEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_ui_on_next),
                 option -> mPlayerTweaksData.enablePlayerUiOnNext(option.isSelected()),
