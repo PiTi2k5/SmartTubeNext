@@ -61,6 +61,7 @@
     <string name="dialog_remove_account">Вийти з облікового запису</string>
     <string name="dialog_add_account">Увійти в обліковий запис</string>
     <string name="default_lang">За замовчуванням</string>
+    <string name="original_lang">Оригінальний</string>
     <string name="dialog_select_language">Мова</string>
     <string name="subtitle_default">Звичайні</string>
     <string name="subtitle_white_semi_transparent">Білі на напівпрозорому фоні</string>
@@ -692,4 +693,5 @@
     <string name="card_preview_full">Відео зі звуком</string>
     <string name="card_preview">Попередній перегляд картки</string>
     <string name="card_unlocalized_titles">Не перекладати назви відео</string>
+    <string name="dont_resize_video_to_fit_dialog">Не змінювати розмір відео відповідно до розміру діалогу</string>
 </resources>

@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
@@ -372,11 +373,16 @@ public class AppDialogUtil {
         // Alphabetical order
         Collections.sort(options, (o1, o2) -> ((String) o1.getTitle()).compareTo((String) o2.getTitle()));
 
-        for (int i = 0; i < lastLanguages.size(); i++) {
-            String languageCode = lastLanguages.get(i);
+        int idx = 0;
+
+        for (String languageCode : lastLanguages) {
+            if (TextUtils.isEmpty(languageCode)) { // original
+                continue;
+            }
+
             Locale locale = new Locale(languageCode);
 
-            options.add(i, UiOptionItem.from(locale.getDisplayLanguage(),
+            options.add(idx++, UiOptionItem.from(locale.getDisplayLanguage(),
                     optionItem -> {
                         playerData.setAudioLanguage(languageCode);
                         onSetCallback.run();
@@ -384,7 +390,7 @@ public class AppDialogUtil {
                     languageCode.equals(playerData.getAudioLanguage())));
         }
 
-        options.add(0, UiOptionItem.from(context.getString(R.string.default_lang),
+        options.add(0, UiOptionItem.from(context.getString(R.string.original_lang),
                 optionItem -> {
                     playerData.setAudioLanguage("");
                     onSetCallback.run();
@@ -422,6 +428,7 @@ public class AppDialogUtil {
 
     public static OptionCategory createAudioVolumeCategory(Context context, Runnable onSetCallback) {
         PlayerData playerData = PlayerData.instance(context);
+        PlayerTweaksData playerTweaksData = PlayerTweaksData.instance(context);
         String title = context.getString(R.string.player_volume);
 
         List<OptionItem> options = new ArrayList<>();
@@ -431,6 +438,7 @@ public class AppDialogUtil {
             options.add(UiOptionItem.from(String.format("%s%%", scalePercent),
                     optionItem -> {
                         playerData.setPlayerVolume(scale);
+                        playerTweaksData.enablePlayerAutoVolume(false);
 
                         if (scalePercent > 100) {
                             MessageHelpers.showLongMessage(context, R.string.volume_boost_warning);
@@ -654,7 +662,7 @@ public class AppDialogUtil {
                     playerTweaksData.getScreenOffDimmingPercents() == dimPercents));
         }
 
-        String title = context.getString(R.string.player_screen_off_dimming);
+        String title = context.getString(R.string.screen_dimming_amount);
 
         return OptionCategory.from(PLAYER_SCREEN_DIMMING_ID, OptionCategory.TYPE_RADIO_LIST, title, options);
     }
@@ -688,7 +696,7 @@ public class AppDialogUtil {
                     playerTweaksData.getScreenOffTimeoutSec() == timeoutSec));
         }
 
-        String title = context.getString(R.string.player_screen_off_timeout);
+        String title = context.getString(R.string.screen_dimming_timeout);
 
         return OptionCategory.from(PLAYER_SCREEN_TIMEOUT_ID, OptionCategory.TYPE_RADIO_LIST, title, options);
     }

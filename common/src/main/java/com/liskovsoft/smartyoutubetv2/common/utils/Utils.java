@@ -57,6 +57,7 @@ import com.jakewharton.processphoenix.ProcessPhoenix;
 import com.liskovsoft.sharedutils.GlobalConstants;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+import com.liskovsoft.sharedutils.misc.WeakHashSet;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.common.R;
@@ -81,11 +82,13 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class Utils {
+    private static final int RANDOM_FAIL_REPEAT_TIMES = 10;
     private static final String REMOTE_CONTROL_RECEIVER_CLASS_NAME = "com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlReceiver";
     private static final String UPDATE_CHANNELS_RECEIVER_CLASS_NAME = "com.liskovsoft.leanbackassistant.channels.UpdateChannelsReceiver";
     private static final String BOOTSTRAP_ACTIVITY_CLASS_NAME = "com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity";
@@ -570,13 +573,31 @@ public class Utils {
 
     @SuppressWarnings("deprecation")
     public static boolean isServiceRunning(Context context, Class<? extends Service> serviceClass) {
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+        List<RunningServiceInfo> services = getRunningServices(context);
+
+        if (services == null) {
+            return false;
+        }
+
+        for (RunningServiceInfo service : services) {
             if (serviceClass.getName().equals(service.service.getClassName())) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static List<RunningServiceInfo> getRunningServices(Context context) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+
+        try {
+            return manager.getRunningServices(Integer.MAX_VALUE);
+        } catch (NullPointerException e) {
+            // NullPointerException: Attempt to invoke interface method 'java.lang.Object android.os.Parcelable$Creator.createFromParcel(android.os.Parcel)' on a null object reference
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public static void cancelNotification(Context context, int notificationId) {
@@ -1055,8 +1076,10 @@ public class Utils {
         return VERSION.SDK_INT <= 23 || Helpers.equals(BuildConfig.FLAVOR, "strtarmenia");
     }
 
-    public static boolean isEnoughRam(Context context) {
-        return VERSION.SDK_INT > 21 && Helpers.getDeviceRam(context) > 1_500_000_000; // 1.5 GB
+    public static boolean isEnoughRam() {
+        long maxMemory = Runtime.getRuntime().maxMemory();
+
+        return (int)(maxMemory / (1024 * 1024)) > 350; // more than 350MB available to the app
     }
 
     public static String getStackTraceAsString(Throwable throwable) {
@@ -1072,5 +1095,74 @@ public class Utils {
         }
 
         return result.toString();
+    }
+
+    public static int getRandomIndex(int currentIdx, int playlistSize) {
+        if (playlistSize <= 1) {
+            return -1;
+        }
+
+        int randomIndex = -1;
+
+        for (int i = 0; i < RANDOM_FAIL_REPEAT_TIMES; i++) {
+            randomIndex = Helpers.getRandomIndex(playlistSize);
+            if (randomIndex != currentIdx) {
+                break;
+            }
+        }
+
+        return randomIndex;
+    }
+
+    public static void addMyCallback(List<Runnable> myCallbacks, Runnable callback) {
+        if (myCallbacks == null || callback == null) {
+            return;
+        }
+
+        if (!myCallbacks.contains(callback)) {
+            myCallbacks.add(callback);
+        }
+    }
+
+    public static void addMyCallback(WeakHashSet<Runnable> myCallbacks, Runnable callback) {
+        if (myCallbacks == null || callback == null) {
+            return;
+        }
+
+        if (!myCallbacks.contains(callback)) {
+            myCallbacks.add(callback);
+        }
+    }
+
+    public static void runMyCallbacks(List<Runnable> myCallbacks) {
+        if (myCallbacks == null || myCallbacks.isEmpty()) {
+            return;
+        }
+
+        // Copy-then-Clear approach to fix possible stackoverflow
+        List<Runnable> callbacks = new ArrayList<>(myCallbacks);
+        myCallbacks.clear();
+
+        for (Runnable callback : callbacks) {
+            if (callback != null) {
+                callback.run();
+            }
+        }
+    }
+
+    public static void runMyCallbacks(WeakHashSet<Runnable> myCallbacks) {
+        if (myCallbacks == null || myCallbacks.isEmpty()) {
+            return;
+        }
+
+        // Copy-then-Clear approach to fix possible stackoverflow
+        List<Runnable> callbacks = myCallbacks.asList();
+        myCallbacks.clear();
+
+        for (Runnable callback : callbacks) {
+            if (callback != null) {
+                callback.run();
+            }
+        }
     }
 }

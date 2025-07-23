@@ -61,6 +61,7 @@
     <string name="dialog_remove_account">Oturumu kapat</string>
     <string name="dialog_add_account">Oturum aç</string>
     <string name="default_lang">Varsayılan</string>
+    <string name="original_lang">Orijinal</string>
     <string name="dialog_select_language">Uygulama dili</string>
     <string name="subtitle_default">Varsayılan</string>
     <string name="subtitle_white_semi_transparent">Beyaz (Yarı saydam arka plan)</string>
@@ -703,4 +704,5 @@
     <string name="card_preview_full">Sesli video</string>
     <string name="card_preview">Kart önizlemesi</string>
     <string name="card_unlocalized_titles">Yerelleştirilmemiş video başlıkları</string>
+    <string name="dont_resize_video_to_fit_dialog">Videoyu diyaloğa uyacak şekilde yeniden boyutlandırmayın</string>
 </resources>

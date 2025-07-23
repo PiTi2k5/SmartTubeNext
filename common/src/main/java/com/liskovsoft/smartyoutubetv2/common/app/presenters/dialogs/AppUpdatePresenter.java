@@ -79,7 +79,7 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
             if (AppUpdateCheckerListener.LATEST_VERSION.equals(error.getMessage())) {
                 MessageHelpers.showMessage(getContext(), R.string.update_not_found);
             } else {
-                MessageHelpers.showMessage(getContext(), R.string.update_error);
+                MessageHelpers.showMessage(getContext(), String.format("%s: %s", getContext().getString(R.string.update_error), error.getMessage()));
             }
         }
 
@@ -92,17 +92,17 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
             return;
         }
 
-        mSettingsPresenter.appendStringsCategory(getContext().getString(R.string.update_changelog), createChangelogOptions(changelog));
         mSettingsPresenter.appendSingleButton(
                 UiOptionItem.from(getContext().getString(R.string.install_update), optionItem -> {
                     GeneralData.instance(getContext()).setChangelog(changelog);
                     mUpdateChecker.installUpdate();
                 }, false));
+        mSettingsPresenter.appendStringsCategory(getContext().getString(R.string.update_changelog), createChangelogOptions(changelog));
         //mSettingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.show_again), optionItem -> {
         //    mUpdateChecker.enableUpdateCheck(optionItem.isSelected());
         //}, mUpdateChecker.isUpdateCheckEnabled()));
 
-        mSettingsPresenter.setOnDone(getOnDone());
+        //mSettingsPresenter.setOnFinish(getOnFinish());
         mSettingsPresenter.showDialog(String.format("%s %s", getContext().getString(R.string.app_name), versionName), AppUpdatePresenter::unhold);
     }
 

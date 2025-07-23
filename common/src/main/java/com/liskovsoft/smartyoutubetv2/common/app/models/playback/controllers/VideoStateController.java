@@ -263,6 +263,12 @@ public class VideoStateController extends BasePlayerController {
 
     @Override
     public void onSpeedClicked(boolean enabled) {
+        fitVideoIntoDialog();
+
+        if (getVideo() == null) {
+            return;
+        }
+
         float lastSpeed = getPlayerData().getSpeed(getVideo().channelId);
         if (Helpers.floatEquals(lastSpeed, 1.0f)) {
             lastSpeed = getPlayerData().getLastSpeed();
@@ -282,6 +288,8 @@ public class VideoStateController extends BasePlayerController {
 
     @Override
     public void onSpeedLongClicked(boolean enabled) {
+        fitVideoIntoDialog();
+
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
         // suppose live stream if buffering near the end
@@ -565,15 +573,16 @@ public class VideoStateController extends BasePlayerController {
     }
 
     private void restoreVolume() {
+        if (getVideo() == null || getPlayer() == null) {
+            return;
+        }
+
         float newVolume = getPlayerData().getPlayerVolume();
 
         if (getPlayerTweaksData().isPlayerAutoVolumeEnabled()) {
-            newVolume *= getVideo().volume;
+            //newVolume *= getVideo().volume;
+            newVolume = getVideo().volume;
         }
-
-        //if (getVideo().isShorts || getVideo().getDurationMs() <= 60_000) {
-        //    newVolume /= 2;
-        //}
 
         if (getVideo().isShorts) {
             newVolume /= 2;
@@ -583,6 +592,10 @@ public class VideoStateController extends BasePlayerController {
     }
 
     private void restorePitch() {
+        if (getPlayer() == null) {
+            return;
+        }
+
         getPlayer().setPitch(getPlayerData().getPitch());
     }
 

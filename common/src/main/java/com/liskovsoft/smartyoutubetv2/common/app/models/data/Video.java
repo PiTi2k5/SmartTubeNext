@@ -65,6 +65,7 @@ public final class Video {
     public int startTimeSeconds;
     public MediaItem mediaItem;
     public MediaItem nextMediaItem;
+    public MediaItem shuffleMediaItem;
     public PlaylistInfo playlistInfo;
     public boolean hasNewContent;
     public boolean isLive;
@@ -93,6 +94,7 @@ public final class Video {
     public boolean deArrowProcessed;
     public boolean isLiveEnd;
     public boolean forceSectionPlaylist;
+    public boolean isShuffled;
     private int startSegmentNum;
     private long liveDurationMs = -1;
     private long durationMs = -1;
@@ -615,8 +617,15 @@ public final class Video {
 
         List<MediaItem> mediaItems = getGroup().getMediaGroup().getMediaItems();
 
-        MediaItem first = mediaItems.get(0);
-        MediaItem second = mediaItems.get(1);
+        // Some items may not have a playlistId (e.g. movies)
+        List<MediaItem> filtered = Helpers.filter(mediaItems, item -> item.getPlaylistId() != null || item.getParams() != null, 10);
+
+        if (filtered == null || filtered.size() < 2) {
+            return false;
+        }
+
+        MediaItem first = filtered.get(0);
+        MediaItem second = filtered.get(1);
 
         String playlist1 = first.getPlaylistId() != null ? first.getPlaylistId() : first.getParams();
         String playlist2 = second.getPlaylistId() != null ? second.getPlaylistId() : second.getParams();
@@ -662,6 +671,10 @@ public final class Video {
 
     public boolean belongsToNotifications() {
         return belongsToGroup(MediaGroup.TYPE_NOTIFICATIONS);
+    }
+
+    public boolean belongsToSuggestions() {
+        return belongsToGroup(MediaGroup.TYPE_SUGGESTIONS);
     }
 
     private boolean belongsToGroup(int groupId) {
@@ -715,6 +728,7 @@ public final class Video {
         }
         channelId = metadata.getChannelId();
         nextMediaItem = findNextVideo(metadata);
+        shuffleMediaItem = metadata.getShuffleVideo();
         playlistInfo = metadata.getPlaylistInfo();
         isSubscribed = metadata.isSubscribed();
         likeCount = metadata.getLikeCount();
@@ -785,6 +799,7 @@ public final class Video {
         video.isLive = isLive;
         video.isUpcoming = isUpcoming;
         video.nextMediaItem = nextMediaItem;
+        video.shuffleMediaItem = shuffleMediaItem;
         video.durationMs = durationMs;
 
         if (getGroup() != null) {
@@ -879,9 +894,35 @@ public final class Video {
     }
 
     public boolean isSectionPlaylistEnabled(Context context) {
-        return PlayerTweaksData.instance(context).isSectionPlaylistEnabled() && getGroup() != null &&
+        return PlayerTweaksData.instance(context).isSectionPlaylistEnabled() && getGroup() != null && !belongsToSuggestions() &&
                 (playlistId == null || PLAYLIST_LIKED_MUSIC.equals(playlistId) || nextMediaItem == null || forceSectionPlaylist ||
                         (!isMix() && !belongsToSamePlaylistGroup())) && // skip hidden playlists (music videos usually)
                     (!isRemote || remotePlaylistId == null);
+    }
+
+    public String createPlaylistTitle() {
+        if (!hasPlaylist()) {
+            return null;
+        }
+        
+        // Trying to properly format channel playlists, mixes etc
+        boolean isChannelPlaylistItem = getGroupTitle() != null && belongsToSameAuthorGroup() && belongsToSamePlaylistGroup();
+        boolean isUserPlaylistItem = getGroupTitle() != null && belongsToSamePlaylistGroup();
+        String title = isChannelPlaylistItem ? getAuthor() : isUserPlaylistItem ? null : getTitle();
+        String subtitle = isChannelPlaylistItem || isUserPlaylistItem || belongsToUserPlaylists() ? getGroupTitle() : getAuthor();
+        return title != null && subtitle != null ? String.format("%s - %s", title, subtitle) : String.format("%s", title != null ? title : subtitle);
+    }
+
+    public String createChannelTitle() {
+        if (!hasReloadPageKey() && !hasChannel()) {
+            return null;
+        }
+        
+        // Trying to properly format channel playlists, mixes etc
+        boolean hasChannel = hasChannel() && !isChannel();
+        boolean isUserPlaylistItem = getGroupTitle() != null && belongsToSamePlaylistGroup();
+        String title = hasChannel ? getAuthor() : isUserPlaylistItem ? null : getTitle();
+        String subtitle = isUserPlaylistItem ? getGroupTitle() : hasChannel || isChannel() ? null : getAuthor();
+        return title != null && subtitle != null ? String.format("%s - %s", title, subtitle) : String.format("%s", title != null ? title : subtitle);
     }
 }

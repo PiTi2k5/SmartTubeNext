@@ -38,6 +38,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.AccountChangeListener;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
@@ -86,7 +87,10 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         mBrowseProcessor = new BrowseProcessorManager(getContext(), this::syncItem);
         mActions = new ArrayList<>();
 
-        initSections();
+        initSectionMappings();
+        updateChannelSorting();
+        updatePlaylistsStyle();
+        initPinnedData();
     }
 
     public static BrowsePresenter instance(Context context) {
@@ -111,9 +115,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
-        updateChannelSorting();
-        updatePlaylistsStyle();
-        updateSections();
+        refreshSections();
 
         // Move default focus
         int selectedSectionIndex = findSectionIndex(mCurrentSection != null ? mCurrentSection.getId() : mBootstrapSectionId);
@@ -166,7 +168,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         }
     }
 
-    private void initSections() {
+    private void initSectionMappings() {
         initSectionMapping();
 
         initSectionCallbacks();
@@ -260,6 +262,19 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
+        initPinnedData();
+
+        refreshSections();
+    }
+
+    private void refreshSections() {
+        if (getView() == null) {
+            return;
+        }
+
+        // clean up (profile changed etc)
+        getView().removeAllSections();
+
         int bootSectionId = getSidebarService().getBootSectionId();
 
         // Empty Home on first run fix. Switch Trending temporarily.
@@ -267,13 +282,6 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             bootSectionId = MediaGroup.TYPE_TRENDING;
             //getSidebarService().enableSection(bootSectionId, true);
         }
-
-        // clean up (profile changed etc)
-        getView().removeAllSections();
-
-        initPinnedSections();
-        initPinnedCallbacks();
-        initPasswordSection();
 
         int index = 0;
 
@@ -299,6 +307,12 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         // Refresh and restore last focus
         int selectedSectionIndex = findSectionIndex(mCurrentSection != null ? mCurrentSection.getId() : -1);
         getView().selectSection(selectedSectionIndex != -1 ? selectedSectionIndex : mBootSectionIndex, false);
+    }
+
+    private void initPinnedData() {
+        initPinnedSections();
+        initPinnedCallbacks();
+        initPasswordSection();
     }
 
     private void sortSections() {
@@ -394,7 +408,16 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
-        VideoActionPresenter.instance(getContext()).apply(item);
+        // Check that channels new look enabled and we're on the first columnAdd commentMore actions
+        if (belongsToChannelUploadsMultiGrid(item)) {
+            if (getMainUIData().isUploadsAutoLoadEnabled()) {
+                VideoActionPresenter.instance(getContext()).apply(item);
+            } else {
+                updateChannelUploadsMultiGrid(item);
+            }
+        } else {
+            VideoActionPresenter.instance(getContext()).apply(item);
+        }
     }
 
     @Override
@@ -1051,6 +1074,9 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
             return;
         }
 
+        initSectionMappings();
+        updateChannelSorting();
+        updatePlaylistsStyle();
         updateSections();
     }
 
@@ -1100,6 +1126,16 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
                 errorFragmentData = new CategoryEmptyError(getContext(), null);
             } else {
                 errorFragmentData = new SignInError(getContext());
+            }
+
+            // TODO: should we find a better place e.g. RetrofitHelper
+            // java.net.UnknownHostException: Unable to resolve host "www.youtube.com": No address associated with hostname
+            if (error != null && Helpers.contains(error.getMessage(), "No address associated with hostname")) {
+                if (!PlayerTweaksData.instance(getContext()).isIPv4DnsPreferred()) {
+                    PlayerTweaksData.instance(getContext()).preferIPv4Dns(true);
+                    // Restart app to reinit okhttp internal objects
+                    Utils.restartTheApp(getContext());
+                }
             }
 
             getView().showError(errorFragmentData);

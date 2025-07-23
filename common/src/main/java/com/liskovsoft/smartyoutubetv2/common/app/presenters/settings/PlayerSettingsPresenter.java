@@ -19,7 +19,6 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SearchData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
-import com.liskovsoft.youtubeapi.service.YouTubeMediaItemService;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import java.util.ArrayList;
@@ -206,8 +205,7 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 {R.string.action_video_info, PlayerTweaksData.PLAYER_BUTTON_VIDEO_INFO},
                 {R.string.action_video_stats, PlayerTweaksData.PLAYER_BUTTON_VIDEO_STATS},
                 {R.string.action_playback_queue, PlayerTweaksData.PLAYER_BUTTON_PLAYBACK_QUEUE},
-                //{R.string.action_screen_off, PlayerTweaksData.PLAYER_BUTTON_SCREEN_OFF},
-                {R.string.player_screen_off_timeout, PlayerTweaksData.PLAYER_BUTTON_SCREEN_OFF_TIMEOUT},
+                {R.string.screen_dimming, PlayerTweaksData.PLAYER_BUTTON_SCREEN_DIMMING},
                 {R.string.action_video_zoom, PlayerTweaksData.PLAYER_BUTTON_VIDEO_ZOOM},
                 {R.string.action_channel, PlayerTweaksData.PLAYER_BUTTON_OPEN_CHANNEL},
                 {R.string.action_search, PlayerTweaksData.PLAYER_BUTTON_SEARCH},
@@ -496,6 +494,10 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
 
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.dont_resize_video_to_fit_dialog),
+                option -> mPlayerTweaksData.enableDontResizeVideoToFitDialog(option.isSelected()),
+                mPlayerTweaksData.isDontResizeVideoToFitDialogEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.player_audio_focus),
                 option -> mPlayerTweaksData.enableAudioFocus(option.isSelected()),

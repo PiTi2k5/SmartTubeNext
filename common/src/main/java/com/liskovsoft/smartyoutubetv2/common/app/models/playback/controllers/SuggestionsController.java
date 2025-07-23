@@ -28,7 +28,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.BrowseProcessorManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
-import com.liskovsoft.smartyoutubetv2.common.utils.UniqueRandom;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.Observable;
@@ -351,6 +350,10 @@ public class SuggestionsController extends BasePlayerController {
     }
 
     private void appendSuggestions(Video video, MediaItemMetadata mediaItemMetadata) {
+        if (video == null || getPlayer() == null) {
+            return;
+        }
+
         if (!video.isRemote && getPlayer().isSuggestionsShown()) {
             Log.d(TAG, "Suggestions is opened. Seems that user want to stay here.");
             return;
@@ -392,10 +395,6 @@ public class SuggestionsController extends BasePlayerController {
                 if (Helpers.equals(videoGroup.getTitle(), " ")) {
                     videoGroup.setTitle(getContext().getString(R.string.suggestions));
                 }
-
-                //if (groupIndex == 0) {
-                //    mergeRemoteAndUserQueueIfNeeded(video, videoGroup);
-                //}
 
                 getPlayer().updateSuggestions(videoGroup);
                 mBrowseProcessor.process(videoGroup);
@@ -531,6 +530,10 @@ public class SuggestionsController extends BasePlayerController {
     }
 
     private void appendSectionPlaylistIfNeeded(Video video) {
+        if (getPlayer() == null) {
+            return;
+        }
+
         if (!video.isSectionPlaylistEnabled(getContext())) {
             // Important fix. Gives priority to playlist or suggestion.
             mNextSectionVideo = null;
@@ -619,6 +622,10 @@ public class SuggestionsController extends BasePlayerController {
     }
 
     private void focusAndContinueIfNeeded(VideoGroup group, Runnable onDone) {
+        if (getPlayer() == null) {
+            return;
+        }
+
         Video video = getPlayer().getVideo();
 
         if (group == null || group.isEmpty() || video == null || !video.hasVideo()) {
@@ -647,10 +654,6 @@ public class SuggestionsController extends BasePlayerController {
     }
 
     private void findNextSectionVideoIfNeeded(Video video) {
-        if (!video.isSectionPlaylistEnabled(getContext())) {
-            return;
-        }
-
         if (getPlayerData().getPlaybackMode() == PlayerConstants.PLAYBACK_MODE_SHUFFLE) {
             findRandomSectionVideo(video);
         } else {
@@ -669,7 +672,7 @@ public class SuggestionsController extends BasePlayerController {
 
         int currentIdx = group.indexOf(video);
 
-        int nextIdx = UniqueRandom.getRandomIndex(currentIdx, group.getSize());
+        int nextIdx = Utils.getRandomIndex(currentIdx, group.getSize());
 
         mNextSectionVideo = group.get(nextIdx);
         getPlayer().setNextTitle(mNextSectionVideo);

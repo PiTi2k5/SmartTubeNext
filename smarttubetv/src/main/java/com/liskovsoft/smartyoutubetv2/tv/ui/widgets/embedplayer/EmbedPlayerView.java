@@ -381,6 +381,11 @@ public class EmbedPlayerView extends PlayerView implements PlaybackView {
     }
 
     @Override
+    public FormatItem getSubtitleFormat() {
+        return mExoPlayerController.getSubtitleFormat();
+    }
+
+    @Override
     public boolean isEngineInitialized() {
         return mPlayer != null;
     }
@@ -493,6 +498,11 @@ public class EmbedPlayerView extends PlayerView implements PlaybackView {
     }
 
     @Override
+    public void setVideoGravity(int gravity) {
+        
+    }
+
+    @Override
     protected void finalize() throws Throwable {
         try {
             finish();
@@ -558,12 +568,6 @@ public class EmbedPlayerView extends PlayerView implements PlaybackView {
         mPlayer.setPlayWhenReady(true);
         //mPlayer.setRepeatMode(Player.REPEAT_MODE_ONE);
 
-        // Fix seeking on TextureView (some devices only)
-        if (PlayerTweaksData.instance(getContext()).isTextureViewEnabled()) {
-            // Also, live stream (dash) seeking fix
-            mPlayer.setSeekParameters(SeekParameters.CLOSEST_SYNC);
-        }
-
         mExoPlayerController.setPlayer(mPlayer);
         //mExoPlayerController.setVideo(mVideo);
         mExoPlayerController.selectFormat(mQuality == QUALITY_LOW ? FormatItem.VIDEO_SUB_SD_AVC_30 : FormatItem.VIDEO_SD_AVC_30);
@@ -571,10 +575,6 @@ public class EmbedPlayerView extends PlayerView implements PlaybackView {
         mExoPlayerController.selectFormat(FormatItem.SUBTITLE_NONE);
         if (mIsMute) {
             mExoPlayerController.setVolume(0);
-        }
-
-        if (PlayerTweaksData.instance(getContext()).isAudioFocusEnabled()) {
-            ExoPlayerInitializer.enableAudioFocus(mPlayer, true);
         }
 
         setPlayer(mPlayer);

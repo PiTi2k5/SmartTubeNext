@@ -24,6 +24,7 @@ public interface PlayerEngine extends PlayerConstants {
     void setFormat(FormatItem option);
     FormatItem getVideoFormat();
     FormatItem getAudioFormat();
+    FormatItem getSubtitleFormat();
     boolean isEngineInitialized();
     void restartEngine();
     void reloadPlayback();
@@ -45,4 +46,5 @@ public interface PlayerEngine extends PlayerConstants {
     void setAspectRatio(float ratio);
     void setRotationAngle(int angle);
     void setVideoFlipEnabled(boolean enabled);
+    void setVideoGravity(int gravity);
 }
